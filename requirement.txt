@@ -1,0 +1,10 @@
+natsort
+intervaltree
+argparse
+path
+pandas
+numpy
+biopython
+gffutils
+gzip
+rich
