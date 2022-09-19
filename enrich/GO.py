@@ -38,11 +38,12 @@ def obo2db(file):
                 goclass = re.findall('namespace: (.*)',num2row[key+3])[0].replace('_',' ')
                 # print(goid,godes,goclass,sep='\t',file=output)
                 id2attr[goid] = [godes,goclass]
-    with open('go-{}.txt'.format(ver),'w') as w:
-        w.write('GOid\tGOterm\tGOclass\n')
+    with open('go.version_{}.txt'.format(ver),'w') as w:
+        w.write('GO\tDescription\tlevel\n')
         for i in id2attr.keys():
             w.write('{}\t{}\t{}\n'.format(i,id2attr[i][0],id2attr[i][1]))
     return ver
+
 
 #outside command 
 def convertOBO(args):
@@ -67,7 +68,7 @@ def convertOBO(args):
     args = p.parse_args(args)
     check_file_exists(args.obo)
     ver = obo2db(args.obo)
-    log.info('Completed! the output file is `go-{}.txt`'.format(ver))
+    log.info('Completed! the output file is `go.version_{}.txt`'.format(ver))
 
 
 def main():

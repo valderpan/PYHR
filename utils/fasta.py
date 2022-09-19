@@ -70,22 +70,20 @@ def read_seqID(file):
 
 
 def ExtractandOut_seq(fastaD,ID,output):
-    unmatch = []
-    match = 0
+    unmatch = [];obm = [];matched = []
     with open(output,'w') as w:
-        for key in fastaD.keys():
-            if key in ID:
-                match += 1
-                w.write(">{}\n".format(key))
-                w.write(str(fastaD[key])+'\n')
+        for i in ID:
+            if i in fastaD.keys():
+                matched.append(i)
+                w.write(">{}\n".format(i))
+                w.write(str(fastaD[i])+'\n')
             else:
-                unmatch.append(key)
-    log.info('Total {} seqs are matched'.format(match))
-    if len(unmatch)>0:
+                unmatch.append(i)
+    if len(unmatch) > 0:
         if len(unmatch) > 3:
-            log.info('Total {} seqs did are not matched, such as {}, {}, {},...'.format(len(unmatch),unmatch[0],unmatch[1],unmatch[2]))
+            log.warning('Total {} seqs did are not matched, such as {}, {}, {},...'.format(len(unmatch),unmatch[0],unmatch[1],unmatch[2]))
         else:
-            log.info('Only {} seqs did are not matched, such as {}...'.format(len(unmatch),unmatch[0]))
+            log.warning('Only {} seqs did are not matched, such as {}...'.format(len(unmatch),unmatch))
 
 
 def CalEGS(fastaD):

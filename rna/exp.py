@@ -25,7 +25,7 @@ def merge2matrix(files,valuetype,output_file):
     mergedf_list = []
     for file in files:
         file_name = re.findall('([0-9A-Za-z\_\.\-]*)\.tab', file)[0]
-        check_file_exists(file_name)
+        check_file_exists(file)
         df = pd.read_table(file,sep='\t',float_precision='round_trip')
         df2merge = df.loc[:,['Gene ID',valuetype]]
         df2merge['value'] = round(df2merge[valuetype],2)
@@ -60,7 +60,7 @@ def stringtie2ExpMatrix(args):
     pReq.add_argument('type',choices=['FPKM','TPM'] ,
             help='Select the type of data to be extracted')
     pReq.add_argument('-o', '--output', required=True,
-            help='The name of the output file(.xlsx)')
+            help='Specify the output file (.xlsx)')
     pOpt.add_argument('-h', '--help', action='help',
             help='Show help message and exit.')
 
