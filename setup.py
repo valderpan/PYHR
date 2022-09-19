@@ -18,7 +18,7 @@ from setuptools import setup,find_packages
 
 setup(
     name="PYHR",
-    version="0.0.1",
+    version="0.0.2",
     author="Haoran Pan",
     author_email="panpyhr@gmail.com",
     description="My packages",
