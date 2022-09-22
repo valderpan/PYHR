@@ -101,7 +101,7 @@ def RandomBed(args):
             log.error('Must input `--nums` or `--target` options')
     else:
         target_df = pd.read_csv(args.target, sep='\t', header=None,
-                 names=('seqid', 'start', 'end', 'gene'))
+        names=('seqid', 'start', 'end', 'gene'))
         nums = len(target_df)
 
     if args.target and not args.include:

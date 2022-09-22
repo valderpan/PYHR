@@ -58,8 +58,8 @@ class FastaFilter():
     @staticmethod
     def outputfastaD(fastaD,output):
         for key in fastaD.keys():
-            print(key,file=output)
-            print(fastaD[key],file=output)
+            print('>'+key,file=output)
+            print(str(fastaD[key]),file=output)
 
 
 def read_seqID(file):
@@ -151,7 +151,7 @@ def FilterFasta(args):
     if not isinstance(args.mode,str):
         raise TypeError('Please pass a string for mode')
     else:
-        if args.mode not in  ['start','end','re','match']:
+        if not args.mode in  ['start','end','re','match']:
             raise ValueError('The input mode must be one of the following four :[start,end,re,match]')
 
     if args.mode == 'start':        
