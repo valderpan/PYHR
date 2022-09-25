@@ -57,9 +57,10 @@ class FastaFilter():
     
     @staticmethod
     def outputfastaD(fastaD,output):
-        for key in fastaD.keys():
-            print('>'+key,file=output)
-            print(str(fastaD[key]),file=output)
+        with open(output,'w') as w1:
+            for key in fastaD.keys():
+                w1.write('>'+key+'\n')      
+                w1.write(str(fastaD[key])+'\n')
 
 
 def read_seqID(file):
@@ -138,9 +139,8 @@ def FilterFasta(args):
             help='Choose filrter mode')
     pReq.add_argument('-k','--keywords', 
             help='Input the filtered keywords or Regular expressions')
-    pReq.add_argument('-o', '--output', type=argparse.FileType('w'),
-            default=sys.stdout, help='Output file [default: stdout]')
-    
+    pReq.add_argument('-o', '--output',
+            help='Output file')
     pOpt.add_argument('-h', '--help', action='help',
             help='Show help message and exit.')
     
@@ -162,9 +162,13 @@ def FilterFasta(args):
         newD = f.filter_match(args.keywords)
     else:
         newD = f.filter_re(args.keywords)
-
-    f.outputfastaD(newD,args.output)
-
+    if len(newD) >=1 :
+        log.info('A total of {} seqs were saved after filtering'.format(len(newD)))
+        f.outputfastaD(newD,args.output)
+        log.info('The results file is output to `{}` '.format(args.output))
+    else:
+        log.error('None of the seqs are saved after filtering, please check the matching conditions! ')
+    
 
 def ExtractFasta(args):
     '''

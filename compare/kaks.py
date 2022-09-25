@@ -132,7 +132,7 @@ def Read_files(files):
     C_L = []
     for file in files:
         check_file_exists(file)
-        name = re.findall('([0-9a-zA-Z]+)\.KaKs',file)[0]
+        name = re.findall('([0-9a-zA-Z\-\_]+)\.KaKs',file)[0]
         df = pd.read_table(file,sep='\t')
         df['name'] = name
         df = df[df['dS-ng'] > 0]
@@ -164,7 +164,7 @@ def calKsdist(args):
 
 
     pReq.add_argument('-p', '--path', required=True, 
-            help='Path to store ks file (The target file under the path must end with `.KaKs`)')
+            help='Path to store ks file (The target file under the path must end with `.KaKs.result`)')
     pReq.add_argument('-l', '--limit', required=True, 
             type=float,help='Upper limit of ks reads mapping')
     pReq.add_argument('-s', '--step',required=True,
@@ -197,7 +197,7 @@ def concatKs2ggplotdensity(args):
     pOpt = p.add_argument_group('Optional arguments')
 
     pReq.add_argument('path', 
-            help='Path to store ks file (The target file under the path must end with `.KaKs`)')
+            help='Path to store ks file (The target file under the path must end with `.KaKs.result`)')
     pReq.add_argument('-o', '--output', required=True,
             help='The name of the output file(.csv or .tab)')
     pOpt.add_argument('-h', '--help', action='help',
