@@ -21,7 +21,7 @@ from PYHR.utils.fasta import Fa2dict
 log = richlog()
 
 def read_bed(bed):
-    pre = re.findall('([0-9a-zA-Z\-\_\.]+)\.matrix',bed)[0]
+    pre = re.findall('([0-9a-zA-Z\-\_\.]+)\.bed',bed)[0]
     df = pd.read_table(bed,sep='\t',names=['chr','start','end','index'],float_precision='round_trip')
     return df,pre
 
@@ -172,6 +172,18 @@ def statsresult(dirlist,output):
         print('\t', 'Lib Valid Rate (%)',Lib_Valid_Rate,file=output)
         print('\t','Lib Dup (%)',round(100-Lib_Valid_Rate,3),file=output)
 
+#TODO
+def addmissingconcat(beddf,matrix,output):
+    bD1 = {};approw = []
+    for _,row in matrix.iterrows():
+        bD1[str(int(row['bin1']))+'_'+str(int(row['bin2']))] = row['score']
+    for key in bD1.keys():
+        rowdf = pd.DataFrame({"bin1":key.split('_')[1],"bin2":key.split('_')[0],"score":bD1[key]})
+        approw.append(rowdf)
+    ndf = pd.concat(approw)
+    resdf = pd.concat(matrix,ndf,axis=1)
+    resdf = resdf.sort_values(by=['bin1','bin2'])
+    resdf.to_csv(output,sep='\t',index=False,header=True)
 
 ## outside command 
 def modifyMatrixIndex(args):
