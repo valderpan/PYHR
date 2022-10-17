@@ -18,7 +18,7 @@ from setuptools import setup,find_packages
 
 setup(
     name="PYHR",
-    version="0.1.0",
+    version="0.1.1",
     author="Haoran Pan",
     author_email="panpyhr@gmail.com",
     description="My own genome analysis pipeline and scripts",
