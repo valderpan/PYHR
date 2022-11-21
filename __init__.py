@@ -10,4 +10,4 @@ __copyright__ = "Copyright (c) 2019-{}, Haoran Pan".format(datetime.now().year)
 __email__ = "panpyhr@gmail.com"
 __license__ = "BSD"
 __status__ = "Development"
-__version__ = "0.1.2"
+__version__ = "0.1.3"

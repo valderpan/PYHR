@@ -18,6 +18,8 @@ from PYHR.apps.base import check_file_exists, richlog
 from PYHR.apps.base import listify
 
 
+log = richlog()
+
 def main():
     actions = (
             ("RandomBed", "random select several gene from bed file."),
@@ -39,7 +41,6 @@ def import_bed6(bed, sort=False):
     return df
 
 
-log = richlog()
 ## out command
 def CountBedBySeq(args):
     """

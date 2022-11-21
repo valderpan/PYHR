@@ -83,10 +83,12 @@ def get_querydf_other(index,refdf):
 def findOverlapLoops(args):
     """
     Find loops with overlap in both left and right anchors in both sets of data
-    >>> %(prog)s -a loop_a -b loop_b [Options]
+    =============================================================================================
     Output:
     .overlap.bedpe: loops having overlap with another set of data
     .specific.bedpe: loops that no overlap with another set of data, and it is self-specific loop
+    =============================================================================================
+    >>> %(prog)s -a loop_a -b loop_b [Options]
     """
     install()
     p = argparse.ArgumentParser(prog=findOverlapLoops.__name__,

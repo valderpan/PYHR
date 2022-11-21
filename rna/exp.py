@@ -40,7 +40,7 @@ def merge2matrix(files,valuetype,output_file):
     log.info('The results file is output to `{}` '.format(output_file))
     res.to_excel(output_file,header=True,index=False)
 
- 
+
 #outside command
 def stringtie2ExpMatrix(args):
     '''

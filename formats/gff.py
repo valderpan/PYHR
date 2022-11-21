@@ -25,11 +25,11 @@ log = richlog()
 def import_gff(gff_path, _type=None):
     compression = 'gzip' if gff_path.endswith('.gz') else 'infer'
     gff_df = pd.read_csv(gff_path, sep='\t', 
-                         header=None, 
-                         index_col=0, 
-                         comment="#", 
-                         compression = compression,
-                         names=('seqid', 'source',
+                        header=None, 
+                        index_col=0, 
+                        comment="#", 
+                        compression = compression,
+                        names=('seqid', 'source',
                                 'type', 'start', 
                                 'end', 'score', 
                                 'strand','phase',
@@ -47,7 +47,7 @@ def get_gene_id(attributes):
     取出ID对应的geneID
     """
     db = dict(map(lambda x: x.split('='), 
-                  [i for i in attributes.split(';') if i]))
+                [i for i in attributes.split(';') if i]))
     return db['ID']
 
 

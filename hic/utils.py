@@ -215,7 +215,9 @@ def modifyMatrixIndex(args):
 def removeCtgMatrix(args):
     """
     Delete the contig level interaction signal from the Hi-C matrix file
+    ==============================================================================
     row num : the index value corresponding to the last bin of the last chromosome
+    ==============================================================================
     >>> %(prog)s <matirx> <rownum> [Options] -o output
     """
     install()
@@ -270,7 +272,9 @@ def removeCtgMatrix(args):
 def statHiCPro(args):
     """
     Convert HiC-Pro output stats results into publishable level tables\n
-    Note: This script is available in both absolute and relative paths
+    ====================================================================
+    Note: This script is available in both absolute and relative paths !
+    ====================================================================
     >>> %(prog)s <path> [Options] -o output
     """
     install()

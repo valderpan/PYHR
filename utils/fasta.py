@@ -12,7 +12,7 @@ from rich import print
 from rich.traceback import install
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
-from PYHR.apps.base import listify
+from PYHR.apps.base import listify,read_file
 
 
 log = richlog()
@@ -110,11 +110,28 @@ def CalEGS(fastaD):
                                         sum(total_C),sum(total_G),sum(total_T),sum(total_N)))
     print('Effective genome size: {}'.format(sum(total_len)-sum(total_N)))
 
+
+def replace_fastaheader(fastaD,file,output):
+    df = read_file(file,['oldid','newid'])
+    old2new = df.set_index('oldid').to_dict()['newid']
+    if len(old2new) < len(fastaD):
+        log.warning('The content provided in the reference file does not contain all the headers,those that are not included will be printed as ctg_*')
+    with open(output,'w') as w:
+        for key in fastaD.keys():
+            if key in old2new:
+                w.write('>{}\n'.format(old2new[key]))
+                w.write('{}\n'.format(fastaD[key]))
+            else:
+                w.write('>ctg_{}\n'.format(key))
+                w.write('{}\n'.format(fastaD[key]))
+
+
 def main():
     actions = (
             ("FilterFasta", "Filter fasta by header"),
             ("ExtractFasta", "Extract query seq by header"),
-            ('CalEffGenomeSize', "Calculate the effective size of the genome")
+            ('CalEffGenomeSize', "Calculate the effective size of the genome"),
+            ('ReplaceFastaHeader',"Replace the original header in the fasta file")
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
@@ -225,6 +242,40 @@ def CalEffGenomeSize(args):
     fastaD = Fa2dict(args.fasta)
     CalEGS(fastaD)
 
+
+def ReplaceFastaHeader(args):
+    '''
+    Replace the original header in the fasta file
+    ==============================================================================================================
+    Note:The input replacement reference file must be in two-column format and have no headers !
+        eg: GK000010.2   chr10
+            GK000011.2   chr11
+    Make sure that all pseudochromosome ids are in the reference file, as unincluded ids will be output as ctg_* !
+    ==============================================================================================================
+    >>> %(prog)s -i <fasta> -r <replace ref> -o <output fasta> [Options]
+    '''
+    install()
+    p = argparse.ArgumentParser(prog=ReplaceFastaHeader.__name__,
+                        description=ReplaceFastaHeader.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('fasta', 
+            help='Input fasta file')
+    pReq.add_argument('reference', 
+            help='Input replance reference file, it must be in two-column format and have no headers')
+    pReq.add_argument('output',
+            help='Output fasta file')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='Show help message and exit.')
+    
+    args = p.parse_args(args)
+    check_file_exists(args.fasta)
+    fastaD = Fa2dict(args.fasta)
+    check_file_exists(args.reference)
+    replace_fastaheader(fastaD,args.reference,args.output)
+    log.info('Completed! the output file is `{}`'.format(args.output))
 
 if __name__ == "__main__":
     main()
