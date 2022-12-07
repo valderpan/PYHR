@@ -9,6 +9,7 @@ Basic support for running library as script
 """
 
 
+import os
 import sys
 import logging
 import pandas as pd
@@ -220,19 +221,35 @@ def listify(item):
 
 def check_file_exists(infile, ifcontinue=False):
     """
-    检查一个文件或者一个目录是否存在
+    Check whether the file or directory exists
     """
     if not op.exists(infile):
         if not ifcontinue:
-            log.error('No such file of `{}'.format(infile))
+            log.error('No such file of `{}`'.format(infile))
             sys.exit()
         else:
-            log.warning('No such file of `{}, but will continue'.format(infile))
+            log.warning('No such file of `{}`, but will continue'.format(infile))
         return False
     else:
         log.debug('Read file of `{}`'.format(infile))
         return True
 
+
+def check_path_exists(path,ifcontinue=False):
+    """
+    check whether the path exists
+    """
+    if not os.path.exists(path):
+        if ifcontinue == False:
+            log.error('Path does not exist. Input path : {}'.format(path))
+            sys.exit
+        else:
+            log.warning('Path does not exist, but will continue run. Input path : {}'.format(path))
+        return False
+    else:
+        log.debug('Path exists, read path {}'.format(path))
+        return True
+        
 
 def read_file(file,Names=None):
     if file.endswith('.xlsx') or file.endswith('.xls'):

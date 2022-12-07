@@ -10,6 +10,8 @@ import argparse
 from Bio import SeqIO
 from rich import print
 from rich.traceback import install
+from rich.console import Console
+from rich.table import Column, Table
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
 from PYHR.apps.base import listify,read_file
@@ -88,8 +90,17 @@ def ExtractandOut_seq(fastaD,ID,output):
 
 
 def CalEGS(fastaD):
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta")
     egsL = [];total_len = [];total_A = [];total_C = [];total_G = [];total_T = [];total_N = []
-    print('{}\t{}\t{}\t{}\t{}\t{}\t{}'.format('#seq','len','A','C','G','T','N'))
+    table.add_column("Seq",width=12)
+    table.add_column("Len")
+    table.add_column("A")
+    table.add_column("T")
+    table.add_column("G")
+    table.add_column("C")
+    table.add_column("N")
+    # print('{}\t{}\t{}\t{}\t{}\t{}\t{}'.format('#seq','len','A','C','G','T','N'))
     for key in fastaD.keys():
         seq = str(fastaD[key])
         seqlen = len(seq)
@@ -98,17 +109,22 @@ def CalEGS(fastaD):
         G = seq.upper().count('G')
         C = seq.upper().count('C')
         N = seq.upper().count('N')
-        print(key,seqlen,A,C,G,T,N,sep='\t')
+        # print(key,seqlen,A,C,G,T,N,sep='\t')
+        table.add_row(key, str(seqlen), str(A), str(T), str(G), str(C), str(N))
         egsL.extend([A,C,G,T])
         total_A.extend([A])
         total_C.extend([C])
-        total_C.extend([G])
-        total_C.extend([T])
+        total_G.extend([G])
+        total_T.extend([T])
         total_N.extend([N])
         total_len.extend([seqlen])
-    print('{}\t{}\t{}\t{}\t{}\t{}\t{}'.format('Total',sum(total_len),sum(total_A),
-                                        sum(total_C),sum(total_G),sum(total_T),sum(total_N)))
-    print('Effective genome size: {}'.format(sum(total_len)-sum(total_N)))
+    # print('{}\t{}\t{}\t{}\t{}\t{}\t{}'.format('Total',sum(total_len),sum(total_A),
+    #                                     sum(total_C),sum(total_G),sum(total_T),sum(total_N)))
+    table.add_row('Total', str(sum(total_len)), 
+        str(sum(total_A)), str(sum(total_T)), str(sum(total_G)), str(sum(total_C)), str(sum(total_N)))
+    table.add_row('[red]Effective genome size[/red]', '[red]{}[/red]'.format(str(sum(total_len)-sum(total_N))))
+    # print('Effective genome size: {}'.format(sum(total_len)-sum(total_N)))
+    console.print(table)
 
 
 def replace_fastaheader(fastaD,file,output):
@@ -232,8 +248,8 @@ def CalEffGenomeSize(args):
     pOpt = p.add_argument_group('Optional arguments')
     pReq.add_argument('fasta', 
             help='Input fasta file')
-    pReq.add_argument('-o', '--output', type=argparse.FileType('w'),
-            default=sys.stdout, help='Output file [default: stdout]')
+    # pReq.add_argument('-o', '--output', type=argparse.FileType('w'),
+    #         default=sys.stdout, help='Output file [default: stdout]')
     pOpt.add_argument('-h', '--help', action='help',
             help='Show help message and exit.')
     
