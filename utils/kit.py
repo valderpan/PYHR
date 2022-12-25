@@ -30,28 +30,54 @@ class md5():
         return self.md5D
 
 
-def compare_md5(Omd5D,Nmd5D):
+def compare_md5(Omd5D,Nmd5D,pattern):
     Error_match = 0
     Correct_match = 0
-    if len(Omd5D) != len(Nmd5D):
-        log.error('The number of files before and after the transfer is different, please check it ！')
-    else:
-        log.debug('Consistent number of files before and after transfer ～')
-        for key in Nmd5D.keys():
-            if not key in Omd5D.keys():
-                log.error('{} md5 value is missing'.format(key))
-            if Nmd5D[key] == Omd5D[key]:
-                log.info('{} md5 value is checked correctly'.format(key))
-                Correct_match += 1
-            else:
-                print('='*30)
-                log.error('{} md5 value is incorrectly checked'.format(key))
-                log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
-                log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                print('='*30)
-                Error_match += 1
-    log.info('Total file number : {},Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Omd5D.keys()),
+    if pattern == 'all':
+        if len(Omd5D) != len(Nmd5D):
+            log.error('The number of files before and after the transfer is different, please check it !')
+            sys.exit()
+        else:
+            log.debug('Consistent number of files before and after transfer ~')
+            for key in Nmd5D.keys():
+                if not key in Omd5D.keys():
+                    log.error('{} md5 value is missing'.format(key))
+                else:
+                    if Nmd5D[key] == Omd5D[key]:
+                        log.info('{} md5 value is OK !!'.format(key))
+                        Correct_match += 1
+                    else:
+                        print('='*30)
+                        log.error('{} md5 value is incorrectly checked'.format(key))
+                        log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
+                        log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                        print('='*30)
+                        Error_match += 1
+        log.info('Total file number : {},\
+            Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Omd5D.keys()),
             Correct_match,Error_match))
+    elif pattern == 'part':
+        if len(Omd5D) != len(Nmd5D):
+            log.warning('The number of files before and after the transfer is different, but it will still run!')
+            for key in Nmd5D.keys():
+                if not key in Omd5D.keys():
+                    log.error('{} md5 value is missing'.format(key))
+                else:
+                    if Nmd5D[key] == Omd5D[key]:
+                        log.info('{} md5 value is OK !!'.format(key))
+                        Correct_match += 1
+                    else:
+                        print('='*30)
+                        log.error('{} md5 value is incorrectly checked'.format(key))
+                        log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
+                        log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                        print('='*30)
+                        Error_match += 1
+        else:
+            log.debug('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
+        log.info('Total transferred file number : {},\
+        Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Nmd5D.keys()),
+        Correct_match,Error_match))
 
 
 ## outside command 
@@ -71,6 +97,8 @@ def CheckMd5(args):
             help='Input original md5 file')
     pReq.add_argument('transferredfile',
             help='Input the transferred file')
+    pReq.add_argument('-p','--pattern',choices=['all','part'],
+            help='Input the transferred file')
     pOpt.add_argument('-h', '--help', action='help',
             help='show help message and exit.')
     
@@ -80,7 +108,8 @@ def CheckMd5(args):
     check_file_exists(args.transferredfile)
     od = md5(args.originalfile)
     nd = md5(args.transferredfile)
-    compare_md5(od.set_md5D(),od.set_md5D())
+    pattern = args.pattern
+    compare_md5(od.set_md5D(),nd.set_md5D(),pattern)
 
 
 def main():
