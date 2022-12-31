@@ -202,14 +202,14 @@ def output_result2(newtree_D,outputfile=None):
 
 
 #outside command 
-def makewindows(args):
+def MakeWindows(args):
     '''
     Create window files for sliding window analysis
     >>> %(prog)s -f <fasta> -w windows_size -s step_size -o output [Options]
     '''
     install()
-    p = argparse.ArgumentParser(prog=makewindows.__name__,
-                        description=makewindows.__doc__,
+    p = argparse.ArgumentParser(prog=MakeWindows.__name__,
+                        description=MakeWindows.__doc__,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
@@ -384,7 +384,7 @@ def SlidingWindow2GCcontent(args):
 
 def main():
     actions = (
-            ("makewindows", "Create window files for sliding window analysis"),
+            ("MakeWindows", "Create window files for sliding window analysis"),
             ("SlidingWindow2GeneNum", "Counting the number of genes on a sequence using sliding window analysis"),
             ("SlidingWindow2GeneID", "Stating the ID of genes on a sequence using sliding window analysis"),
             ("SlidingWindow2GeneLen", "Stating the length of genes on a sequence using sliding window analysis"),

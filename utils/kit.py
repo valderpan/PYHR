@@ -23,10 +23,10 @@ class md5():
             lines = (line.strip() for line in f)
             for line in lines:
                 md5_value,file_name = line.split()
-                if not 'Rawdata' in file_name:
-                    if '/' in file_name:
-                        file_name = file_name.split('/')[-1]
-                    self.md5D[file_name] = md5_value
+                # if not 'Rawdata' in file_name:
+                #     if '/' in file_name:
+                #         file_name = file_name.split('/')[-1]
+                self.md5D[file_name] = md5_value
         return self.md5D
 
 
