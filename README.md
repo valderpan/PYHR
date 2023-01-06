@@ -1,20 +1,22 @@
 # PYHR
 
-**My own genome analysis pipeline and scripts**
+**A custom genomics and epigenomics package**
 
 ## Dependencies
 
 ### requirement
-- natsort
-- intervaltree
-- argparse
-- path
-- pandas
-- numpy
-- biopython
-- gffutils
-- gzip
-- rich
-
+- Python packages
+    - natsort
+    - intervaltree
+    - argparse
+    - path
+    - pandas
+    - numpy
+    - biopython
+    - gffutils
+    - gzip
+    - rich
+- Executable programs
+    - ice
 
 

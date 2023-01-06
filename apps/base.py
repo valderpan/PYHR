@@ -12,6 +12,7 @@ Basic support for running library as script
 import os
 import sys
 import logging
+import subprocess
 import pandas as pd
 import os.path as op
 from natsort import natsorted
@@ -269,6 +270,12 @@ def read_file(file,Names=None):
             df = pd.read_table(file,sep='\t')
     return df
 
+
+def runshell(cmd):
+    log.info(f'Run the shell command: {cmd}')
+    return_code = subprocess.call(cmd, shell=True)
+    if return_code != 0:
+        raise Exception(f"Shell command `{cmd}` failed to execute !")
 
 if __name__ == "__main__":
     main()

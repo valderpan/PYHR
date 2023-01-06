@@ -7,7 +7,7 @@ from datetime import datetime
 
 __author__ = ("Haoran Pan")
 __copyright__ = "Copyright (c) 2019-{}, Haoran Pan".format(datetime.now().year)
-__email__ = "panpyhr@gmail.com"
+__email__ = "haoranpan@foxmail.com"
 __license__ = "BSD"
 __status__ = "Development"
-__version__ = "0.1.5"
+__version__ = "0.1.6"
