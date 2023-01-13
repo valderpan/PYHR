@@ -16,6 +16,7 @@
     - gffutils
     - gzip
     - rich
+    - scipy
 - Executable programs
     - ice
 
