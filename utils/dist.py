@@ -239,6 +239,7 @@ def SlidingWindow2GeneNum(args):
     '''
     Counting the number of genes on a sequence using sliding window analysis
     >>> %(prog)s -g <gff_file> -w windows_file [-o output] [Options]
+    Note: The gff file must have 'ID=' in the attributes
     '''
     install()
     p = argparse.ArgumentParser(prog=SlidingWindow2GeneNum.__name__,
@@ -276,6 +277,7 @@ def SlidingWindow2GeneID(args):
     '''
     Stating the ID of genes on a sequence using sliding window analysis
     >>> %(prog)s -g <gff_file> -w windows_file [-o output] [Options]
+    Note: The gff file must have 'ID=' in the attributes !
     '''
     install()
     p = argparse.ArgumentParser(prog=SlidingWindow2GeneNum.__name__,
@@ -313,6 +315,7 @@ def SlidingWindow2GeneLen(args):
     '''
     Counting the length of genes on a sequence using sliding window analysis
     >>> %(prog)s -g <gff_file> -w windows_file [-o output] [Options]
+    Note: The gff file must have 'ID=' in the attributes
     '''
     install()
     p = argparse.ArgumentParser(prog=SlidingWindow2GeneLen.__name__,
