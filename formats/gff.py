@@ -42,13 +42,27 @@ def import_gff(gff_path, _type=None):
     return gff_df 
 
 
-def get_gene_id(attributes):
+def get_Attr_dict(attributes):
     """
-    取出ID对应的geneID
+    将gff文件的第九列attributes存储为字典
     """
     db = dict(map(lambda x: x.split('='), 
                 [i for i in attributes.split(';') if i]))
+    return db
+
+
+def get_gene_id(db):
+    """
+    取出ID对应的GeneID
+    """
     return db['ID']
+
+
+def get_gene_name(db):
+    """
+    取出ID对应的GeneName
+    """
+    return db['gene_name']
 
 
 def createDB(gff, dbfn=None):

@@ -19,7 +19,7 @@ from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
 from PYHR.apps.base import listify, read_file
 from PYHR.utils.fasta import Fa2dict
-from PYHR.formats.gff import import_gff,get_gene_id
+from PYHR.formats.gff import import_gff,get_Attr_dict,get_gene_id,get_gene_name
 
 
 log = richlog()
@@ -45,12 +45,16 @@ def sliding_windows(fastaD,window,step,output):
                     break
 
 
-def gff2tree_id(gff3):
+def gff2tree_id(gff3,type):
     chr2tree = {}
     gff = import_gff(gff3,'gene')
     geneid = []
     for _,row in gff.iterrows():
-        geneid.append(get_gene_id(row['attributes']))
+        db = get_Attr_dict(row['attributes'])
+        if type == 'ID':
+            geneid.append(get_gene_id(db))
+        elif type == 'Name':
+            geneid.append(get_gene_name(db))
     gff['id'] = geneid
     gff = gff.loc[:,['start','end','id']].reset_index()
     for _,row in gff.iterrows():
@@ -67,7 +71,8 @@ def gff2tree_len(gff3):
     gff = import_gff(gff3,'gene')
     geneid = []
     for _,row in gff.iterrows():
-        geneid.append(get_gene_id(row['attributes']))
+        db = get_Attr_dict(row['attributes'])
+        geneid.append(get_gene_id(db))
     gff['id'] = geneid
     gff = gff.loc[:,['start','end','id']].reset_index()
     for _,row in gff.iterrows():
@@ -251,6 +256,9 @@ def SlidingWindow2GeneNum(args):
 
     pReq.add_argument('-g','--gff',required=True,
             help='Input gff3 file')
+    pReq.add_argument('-t','--type',required=True,
+            help='Input the type of extracted gene',
+            choices=['ID','Name'])
     pReq.add_argument('-w','--window',required=True,
             help='Input window file')    
     pOpt.add_argument('-o', '--output', type=argparse.FileType('w'),
@@ -261,7 +269,7 @@ def SlidingWindow2GeneNum(args):
 
     args = p.parse_args(args)
     check_file_exists(args.gff)
-    chr2tree = gff2tree_id(args.gff)
+    chr2tree = gff2tree_id(args.gff,args.type)
     check_file_exists(args.window)
     win2tree = window2tree(args.window)
     newtree = statGeneNum(chr2tree,win2tree)
@@ -289,6 +297,9 @@ def SlidingWindow2GeneID(args):
 
     pReq.add_argument('-g','--gff',required=True,
             help='Input gff3 file')
+    pReq.add_argument('-t','--type',required=True,
+            help='Input the type of extracted gene',
+            choices=['ID','Name'])
     pReq.add_argument('-w','--window',required=True,
             help='Input window file')    
     pOpt.add_argument('-o', '--output', type=argparse.FileType('w'),
@@ -299,7 +310,7 @@ def SlidingWindow2GeneID(args):
 
     args = p.parse_args(args)
     check_file_exists(args.gff)
-    chr2tree = gff2tree_id(args.gff)
+    chr2tree = gff2tree_id(args.gff,args.type)
     check_file_exists(args.window)
     win2tree = window2tree(args.window)
     newtree = statGeneID(chr2tree,win2tree)
