@@ -16,7 +16,7 @@ import pandas as pd
 import os.path as op
 from rich.traceback import install
 from collections import OrderedDict
-from PYHR.apps.base import ActionDispatcher,richlog
+from PYHR.apps.base import ActionDispatcher,richlog,check_file_exists
 
 
 log = richlog()
@@ -86,13 +86,43 @@ def createDB(gff, dbfn=None):
     else:
         db_name = dbfn
     if not op.exists(db_name):
-        log.debug('No such database file of `{}`, creating ...'.format(db_name))
+        log.info('No such database file of `{}`, creating ...'.format(db_name))
         gffutils.create_db(gff, dbfn=db_name, keep_order=True)
     else:
         log.debug('Already exists DB file of `{}`, skip.'.format(db_name))
     db = gffutils.FeatureDB(db_name)
     
     return db
+
+
+def gff2bed(gff_df,type,keys,output=None):
+    num = 0
+    qdf = gff_df[gff_df['type'] ==  type]
+    for index,row in qdf.iterrows():
+        db = get_Attr_dict(row['attributes'])
+        if not ',' in keys[0]:
+            if not keys[0] in db.keys():
+                log.error(f'[{keys[0]}] is not present in the attributes with the gff file, please check it ! ')
+                sys.exit()
+            else:
+                line = '\t'.join([index,str(row['start']),str(row['end']),db[keys[0]],'0',row['strand']])
+                num += 1
+                print(line,file=output)
+        else:
+            for i in keys[0].split(','):
+                if i not in db.keys():
+                    log.error(f'[{i}] is not present in the attributes with the gff file, please check it ! ')
+                    sys.exit()
+            attrs = [db[i] for i in keys[0].split(',')]
+            line_list = [index,str(row['start']),str(row['end'])]
+            line_list.extend(attrs)
+            line_list.extend(['0',row['strand']])
+            line = '\t'.join(line_list)
+            num += 1
+            print(line,file=output)
+    log.info(f'Extracted {num} features (type={type} id={keys[0]})')
+    if output:
+        log.info("Successful. Output file is `{}`".format(output.name))
 
 
 ## outside command 
@@ -130,12 +160,49 @@ def RenameAttributesID(args):
         for feature in db.children(ID, order_by='start'):
             print(str(feature).replace(ID, rename_db[ID]), file=output)
         print("", file=output)
-    log.debug("Successful. Output file is in `{}`".format(output.name))
+    log.debug("Successful. Output file is `{}`".format(output.name))
+
+
+def bed(args):
+    """
+    %prog bed gff_file [--options]
+    >>> %(prog)s <in.gff3> <rename.list> [Options]
+    Parses the start, stop locations of the selected features out of GFF and
+    generate a bed file
+    """
+    install()
+    p = argparse.ArgumentParser(prog=bed.__name__,
+                        description=bed.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('gff', 
+            help='gff file')
+    pReq.add_argument('--type',
+            dest="type",
+            default="gene", required=True,
+            help='Feature type to extract, use comma for multiple')
+    pReq.add_argument('--key',
+            dest="key",
+            default="ID",
+            nargs='+',required=True,
+            help='Feature type to extract, use comma for multiple')
+    pOpt.add_argument('-o', '--output', type=argparse.FileType('w'),
+            default=sys.stdout, help='output file [default: stdout]')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    
+    args = p.parse_args(args)
+    check_file_exists(args.gff)
+    gff_df = import_gff(args.gff)
+    gff2bed(gff_df,args.type,args.key,args.output)
 
 
 def main():
     actions = (
             ("RenameAttributesID", "rename the ID in attributes"),
+            ("bed","parse gff and produce bed file for particular feature type"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
