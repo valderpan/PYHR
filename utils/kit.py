@@ -4,12 +4,14 @@
 # Date: 2022/09/08
 
 
+import os
 import sys
 import argparse
+from path import Path
 from rich.traceback import install
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
-from PYHR.apps.base import listify, read_file
+from PYHR.apps.base import listify, read_file, runshell
 
 log = richlog()
 
@@ -80,6 +82,31 @@ def compare_md5(Omd5D,Nmd5D,pattern):
         Correct_match,Error_match))
 
 
+def download_fastq(SRR_file):
+    total_file = 0
+    with open(SRR_file) as f:
+        lines = (line.strip() for line in f)
+        for line in lines:
+            if not line.startswith('SRR'):
+                continue
+            else:
+                total_file += 1
+                line_list = line.split()
+                if os.path.exists(f"{line_list[1]}.sra"):
+                    log.info(f"{line_list[1]}.sra already exists, skip!")
+                else:
+                    log.info(f'Download {line_list[0]} and store it in file {line_list[1]}.sra')
+                    cmd1 = f'prefetch {line_list[0]} -o {line_list[1]}.sra'
+                    runshell(cmd1)
+                    cmd2 = f'fastq-dump --gzip --split-3 {line_list[1]}.sra'
+                    log.info(f'Convert {line_list[1]}.sra to {line_list[1]}.fastq.gz')
+                    runshell(cmd2)
+
+    files_num = len([file for file in Path('./').files() if file.endswith('sra')])
+    if total_file != files_num:
+        log.error('Not all files are downloaded, please check it!')
+
+
 ## outside command 
 def CheckMd5(args):
     """
@@ -112,9 +139,33 @@ def CheckMd5(args):
     compare_md5(od.set_md5D(),nd.set_md5D(),pattern)
 
 
+def DownloadFastq(args):
+    """
+    Download GEO database public data through python
+    Attention: The SRR file must contain two columns:[SRRnumber,sample_name]
+    >>> %(prog)s <SRR_with_name file> [Options]
+    """ 
+    install()
+    p = argparse.ArgumentParser(prog=DownloadFastq.__name__,
+                        description=DownloadFastq.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('SRRfile',
+            help='Input SRR_with_name file')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    args = p.parse_args(args)
+
+    check_file_exists(args.SRRfile)
+    download_fastq(args.SRRfile)
+
+
 def main():
     actions = (
             ("CheckMd5", "Correct the md5 value before and after file transfer"),
+            ("DownloadFastq","Download GEO database public data through python"),
             #("concatKs2ggplotdensity", "Extract query seq by header"),
         )
     p = ActionDispatcher(actions)
