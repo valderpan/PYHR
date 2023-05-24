@@ -7,6 +7,7 @@
 import os
 import sys
 import argparse
+import pandas as pd
 from path import Path
 from rich.traceback import install
 from PYHR.apps.base import ActionDispatcher
@@ -43,17 +44,18 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             log.debug('Consistent number of files before and after transfer ~')
             for key in Nmd5D.keys():
                 if not key in Omd5D.keys():
-                    log.error('{} md5 value is missing'.format(key))
+                    # log.error('{} md5 value is missing'.format(key))
+                    log.warning('{} md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:
                         log.info('{} md5 value is OK !!'.format(key))
                         Correct_match += 1
                     else:
-                        print('='*30)
+                        # print('='*30)
                         log.error('{} md5 value is incorrectly checked'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                         log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                        print('='*30)
+                        # print('='*30)
                         Error_match += 1
         log.info('Total file number : {},\
             Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Omd5D.keys()),
@@ -63,17 +65,18 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             log.warning('The number of files before and after the transfer is different, but it will still run!')
             for key in Nmd5D.keys():
                 if not key in Omd5D.keys():
-                    log.error('{} md5 value is missing'.format(key))
+                    # log.error('{} md5 value is missing'.format(key))
+                    log.warning('{} md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:
                         log.info('{} md5 value is OK !!'.format(key))
                         Correct_match += 1
                     else:
-                        print('='*30)
+                        # print('='*30)
                         log.error('{} md5 value is incorrectly checked'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                         log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                        print('='*30)
+                        # print('='*30)
                         Error_match += 1
         else:
             log.debug('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
@@ -96,7 +99,7 @@ def download_fastq(SRR_file):
                     log.info(f"{line_list[1]}.sra already exists, skip!")
                 else:
                     log.info(f'Download {line_list[0]} and store it in file {line_list[1]}.sra')
-                    cmd1 = f'prefetch {line_list[0]} -o {line_list[1]}.sra'
+                    cmd1 = f'prefetch --max-size 200G {line_list[0]} -o {line_list[1]}.sra'
                     runshell(cmd1)
                     cmd2 = f'fastq-dump --gzip --split-3 {line_list[1]}.sra'
                     log.info(f'Convert {line_list[1]}.sra to {line_list[1]}.fastq.gz')
@@ -105,6 +108,24 @@ def download_fastq(SRR_file):
     files_num = len([file for file in Path('./').files() if file.endswith('sra')])
     if total_file != files_num:
         log.error('Not all files are downloaded, please check it!')
+
+
+def mv_encode_seq(metadata,seqpath):
+    df = pd.read_table(metadata,sep='\t')
+    biosample = df['Biosample term name'].unique()
+    for s in biosample:
+        qdf = df[df['Biosample term name'] == s]
+        ENC_D = {}
+        for index,row in qdf.iterrows():
+            paired = row['Paired with'].split('/')[2]
+            if row['File accession'] not in ENC_D and row['File accession'] not in list(ENC_D.values()):
+                ENC_D[row['File accession']] = paired
+        for num,key in enumerate(ENC_D.keys()):
+            cmd1 = f'mv {seqpath}/{key}.fastq.gz {seqpath}/{s}.Lib{num+1}.R1.fastq.gz'
+            cmd2 = f'mv {seqpath}/{ENC_D[key]}.fastq.gz {seqpath}/{s}.Lib{num+1}.R2.fastq.gz'
+            runshell(cmd1)
+            runshell(cmd2)
+
 
 
 ## outside command 
@@ -162,10 +183,35 @@ def DownloadFastq(args):
     download_fastq(args.SRRfile)
 
 
+def MVENCODE(args):
+    """
+    Rename the ENCODE data according to metadata.tsv
+    Attention: The metadata.tsv file must contain three columns:[File accession,Paired with,Biosample term name]
+    >>> %(prog)s <metadata.tsv> [seqpath] [Options]
+    """ 
+    install()
+    p = argparse.ArgumentParser(prog=MVENCODE.__name__,
+                        description=MVENCODE.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('metadata',
+            help='Input metadata.tsv file')
+    pReq.add_argument('seqpath',
+            help='Input fastq path')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    args = p.parse_args(args)
+
+    check_file_exists(args.metadata)
+    mv_encode_seq(args.metadata,args.seqpath)
+
 def main():
     actions = (
             ("CheckMd5", "Correct the md5 value before and after file transfer"),
             ("DownloadFastq","Download GEO database public data through python"),
+            ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
             #("concatKs2ggplotdensity", "Extract query seq by header"),
         )
     p = ActionDispatcher(actions)
