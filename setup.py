@@ -18,11 +18,11 @@ from setuptools import setup,find_packages
 
 setup(
     name="PYHR",
-    version="0.1.9",
+    version="0.1.10",
     author="Haoran Pan",
     author_email="haoranpan@foxmail.com",
-    description="My own genome analysis pipeline and scripts",
-    long_description="test Module",
+    description="A custom genomics and epigenomics package",
+    long_description="A self-use package that integrates genomics and epigenetics",
     long_description_content_type="text",
     url="",
     packages=find_packages(),

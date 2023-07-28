@@ -166,9 +166,8 @@ def RenameAttributesID(args):
 def bed(args):
     """
     %prog bed gff_file [--options]
-    >>> %(prog)s <in.gff3> <rename.list> [Options]
-    Parses the start, stop locations of the selected features out of GFF and
-    generate a bed file
+    >>> %(prog)s <in.gff3> --type gene/exon/transcript --key gene_id,gene_name,... [Options]
+    Parses the start, stop locations of the selected features out of GFF and generate a bed file
     """
     install()
     p = argparse.ArgumentParser(prog=bed.__name__,

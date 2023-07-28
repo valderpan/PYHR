@@ -5,16 +5,21 @@
 
 
 import os
+import re
 import sys
 import argparse
+import subprocess
 import pandas as pd
 from path import Path
 from rich.traceback import install
+from rich.console import Console
+from rich.table import Column, Table
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
 from PYHR.apps.base import listify, read_file, runshell
 
 log = richlog()
+console = Console()
 
 class md5():
     def __init__(self,file) -> None:
@@ -26,9 +31,8 @@ class md5():
             lines = (line.strip() for line in f)
             for line in lines:
                 md5_value,file_name = line.split()
-                # if not 'Rawdata' in file_name:
-                #     if '/' in file_name:
-                #         file_name = file_name.split('/')[-1]
+                if '/' in file_name:
+                    file_name = file_name.split('/')[-1]
                 self.md5D[file_name] = md5_value
         return self.md5D
 
@@ -127,6 +131,49 @@ def mv_encode_seq(metadata,seqpath):
             runshell(cmd2)
 
 
+def EvaluatingSeqDepth(seqpath,output):
+    Seqfiles = [file for file in Path(seqpath).files() if file.endswith('.fq.gz') or file.endswith('.fastq.gz')]
+    file2num = {}
+    pairedD = {}
+    for file in Seqfiles:
+        cmd1 = f'zcat {file} | echo $((`wc -l`/4))'
+        log.info(f'Run commond {cmd1}')
+        res = subprocess.check_output(cmd1, shell=True)
+        res = res.decode('utf-8').strip()
+        file2num[str(file.basename())] = res
+    for key,value in file2num.items():
+        if value in pairedD:
+            pairedD[value].append(key)
+        else:
+            pairedD[value] = [key]
+    for key,value in pairedD.items():
+        if len(value) > 1:
+            base = int(key)*2*150
+            depth = round(base/(3*(10**9)),1)
+            # print('+'.join(value),base,depth,sep='\t',file=output)
+        else:
+            base = int(key)*150
+            depth = round(base/(3*(10**9)),1)
+            # print('+'.join(value),base,depth,sep='\t',file=output)
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("File Name", style="cyan", width=50)
+    table.add_column("Base Num",style='green')
+    table.add_column("SequencingDepth", justify="right",style='magenta')
+    with open(output,'w') as w1:
+        for key,value in pairedD.items():
+            if len(value) > 1:
+                base = int(key)*2*150
+                depth = round(base/(3*(10**9)),1)
+                # print('+'.join(value),base,depth,sep='\t',file=output)
+                w1.write(f"{'+'.join(value)}\t{base}\t{depth}\n")
+                table.add_row('+'.join(value),str(base),str(depth))
+            else:
+                base = int(key)*150
+                depth = round(base/(3*(10**9)),1)
+                # print('+'.join(value),base,depth,sep='\t',file=output)
+                w1.write(f"{'+'.join(value)}\t{base}\t{depth}\n")
+                table.add_row('+'.join(value),str(base),str(depth))
+    console.print(table)
 
 ## outside command 
 def CheckMd5(args):
@@ -207,11 +254,38 @@ def MVENCODE(args):
     check_file_exists(args.metadata)
     mv_encode_seq(args.metadata,args.seqpath)
 
+
+def EvaluateSeqDepth(args):
+    """
+    Evaluate the sequencing volume of the sequencing file
+    Attention: Fastq sequencing files must end in.fq.gz or.fastq.gz!!!
+    >>> %(prog)s seqpath [-o output]
+    """ 
+    install()
+    p = argparse.ArgumentParser(prog=EvaluateSeqDepth.__name__,
+                        description=EvaluateSeqDepth.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('seqpath',
+            help='Input fastq path')
+    pReq.add_argument('-o', '--output', required=True,
+                        help='output file ')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    
+    args = p.parse_args(args)
+
+    EvaluatingSeqDepth(args.seqpath,args.output)
+
+
 def main():
     actions = (
             ("CheckMd5", "Correct the md5 value before and after file transfer"),
             ("DownloadFastq","Download GEO database public data through python"),
             ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
+            ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file")
             #("concatKs2ggplotdensity", "Extract query seq by header"),
         )
     p = ActionDispatcher(actions)
