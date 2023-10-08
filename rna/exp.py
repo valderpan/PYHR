@@ -21,6 +21,11 @@ def getFpkmfile(file_path):
     return files
 
 
+def getRSEMfile(file_path):
+    files = [file for file in Path(file_path).files() if file.endswith('.genes.results')]
+    return files
+
+
 def merge2matrix(files,valuetype,genetype,output_file):
     mergedf_list = []
     for file in files:
@@ -57,11 +62,33 @@ def merge2matrix(files,valuetype,genetype,output_file):
     res.to_excel(output_file,header=True,index=False)
 
 
+def mergeRSEM2matrix(files,valuetype,output_file):
+    mergedf_list = []
+    for file in files:
+        check_file_exists(file)
+        file_name = re.findall('([0-9A-Za-z\_\.\-]*)\.genes.results', file)[0]
+        df = pd.read_table(file,sep='\t',float_precision='round_trip')
+        if valuetype == 'TPM' or valuetype == 'FPKM':
+            df2merge = df.loc[:,['gene_id',valuetype]]
+            df2merge.rename(columns={valuetype:file_name},inplace=True)
+        elif valuetype == 'ReadsCount':
+            df2merge = df.loc[:,['gene_id','expected_count']]
+            df2merge.rename(columns={'expected_count':file_name},inplace=True)
+        else:
+            log.error(f'Option {valuetype} does not exist, it can only be one of [TPM、FPKM or ReadsCount]')
+        mergedf_list.append(df2merge)
+    res = mergedf_list[0]
+    for i in range(1,len(mergedf_list)):
+        res = pd.merge(res,mergedf_list[i],on='gene_id')
+    log.info('The results file is output to `{}` '.format(output_file))
+    res.to_excel(output_file,header=True,index=False)
+
+
 #outside command
 def stringtie2ExpMatrix(args):
     '''
-    Combine the expression values of each sample into a matrix after calculating the expressions from Hisat2+stringtie pipeline
-    >>> %(prog)s <Path of tab files> <FPKM|TPM> -o <output.xlsx>
+    Combine the expression values of each sample into a matrix after calculating the expressions from [Hisat2+stringtie] pipeline
+    >>> %(prog)s <Path of tab files> -v <FPKM|TPM> -g <ID|name> -o <output.xlsx>
     '''
     install()
     p = argparse.ArgumentParser(prog=stringtie2ExpMatrix.__name__,
@@ -72,7 +99,7 @@ def stringtie2ExpMatrix(args):
     pOpt = p.add_argument_group('Optional arguments')
 
     pReq.add_argument('path', 
-            help='Path to store stringtie outpur file (The target file under the path must end with `.tab`)')
+            help='Path to store stringtie output file (The target file under the path must end with `.tab`)')
     pReq.add_argument('-v','--valuetype',choices=['FPKM','TPM'] ,
             help='Select the type of data to be extracted')
     pReq.add_argument('-g','--genetype',choices=['ID','Name'] ,
@@ -90,9 +117,39 @@ def stringtie2ExpMatrix(args):
     merge2matrix(files,args.valuetype,args.genetype,args.output)
 
 
+def RSEM2ExpMatrix(args):
+    '''
+    Combine the expression values of each sample into a matrix after calculating the expressions from [STAR+RSEM] pipeline
+    >>> %(prog)s <Path of tab files> -v <FPKM|TPM|ReadsCount> -o <output.xlsx>
+    '''
+    install()
+    p = argparse.ArgumentParser(prog=RSEM2ExpMatrix.__name__,
+                        description=RSEM2ExpMatrix.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+
+    pReq.add_argument('path', 
+            help='Path to store RSEM output file (The target file under the path must end with `.genes.results`)')
+    pReq.add_argument('-v','--valuetype',choices=['FPKM','TPM','ReadsCount'] ,
+            help='Select the type of data to be extracted')
+    pReq.add_argument('-o', '--output', required=True,
+            help='Specify the output file (.xlsx)')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='Show help message and exit.')
+    args = p.parse_args(args)
+
+    check_file_exists(args.path)
+    files = getRSEMfile(args.path)
+    log.info('Start merge ...')
+    mergeRSEM2matrix(files,args.valuetype,args.output)
+
+
 def main():
     actions = (
             ("stringtie2ExpMatrix", "Combine the expression values of each sample into a matrix after calculating the expressions from Hisat2+stringtie pipeline"),
+            ("RSEM2ExpMatrix", "Combine the expression values of each sample into a matrix after calculating the expressions from STAR+RSEM pipeline"),
             #("concatKs2ggplotdensity", "Extract query seq by header"),
         )
     p = ActionDispatcher(actions)

@@ -165,9 +165,10 @@ def RenameAttributesID(args):
 
 def bed(args):
     """
-    %prog bed gff_file [--options]
+    %prog gff_file [--options]
     >>> %(prog)s <in.gff3> --type gene/exon/transcript --key gene_id,gene_name,... [Options]
     Parses the start, stop locations of the selected features out of GFF and generate a bed file
+    Note: If gtf file is provided,please use jcvi.format.gff bed!
     """
     install()
     p = argparse.ArgumentParser(prog=bed.__name__,
@@ -177,7 +178,7 @@ def bed(args):
     pReq = p.add_argument_group('Required arguments')
     pOpt = p.add_argument_group('Optional arguments')
     pReq.add_argument('gff', 
-            help='gff file')
+            help='gff3 file (If gtf file is provided,please use jcvi.format.gff bed!)')
     pReq.add_argument('--type',
             dest="type",
             default="gene", required=True,
