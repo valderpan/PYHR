@@ -2,6 +2,9 @@
 
 **A custom genomics and epigenomics package**
 
+## Function Overview
+![PYHR_function](https://github.com/valderpan/PYHR/blob/master/PYHR.function.png)
+
 ## Dependencies
 
 ### requirement
