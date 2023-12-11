@@ -46,7 +46,7 @@ def asymmetric_matrix(sparse_matrix):
     return as_sparse_matrix
 
 
-def creatematrix(sparse_matrix,genome,N,beddf,outdir,sample,chrom,resolution):
+def createNNmatrix(sparse_matrix,genome,N,beddf,outdir,sample,chrom,resolution):
     sparse_matrix = pd.DataFrame(sparse_matrix)
     sparse_matrix = sparse_matrix.fillna(0)
     inddf         = np.arange(N)
@@ -65,6 +65,31 @@ def creatematrix(sparse_matrix,genome,N,beddf,outdir,sample,chrom,resolution):
     output = f"{outdir}/{sample}.{genome}_{chrom}.{resolution}.matrix"
     sparse_matrix.to_csv(f'{output}',sep="\t",index=True,header=True,float_format='%0.3f')
     return output
+
+def buildmatrix_basesize(dirpath,bsize,fasize):
+    hicdir = [d for d in Path(dirpath).dirs() if d.basename() == 'hic_results'][0]
+    for d in Path(hicdir).dirs():
+        if d.basename() == 'data':
+            sampleID = [i for i in Path(d).dirs()]
+            tmp = ','.join([i.basename() for i in sampleID])
+            log.info(f'A total of {len(sampleID)} samples were identified as [{tmp}]')
+            for s in sampleID:
+                validfile = [file for file in Path(s).files() if file.endswith('.allValidPairs')][0]
+                cmd1 = f'mkdir -p {hicdir}/matrix/{s.basename()}/iced/{bsize}'
+                cmd2 = f'mkdir -p {hicdir}/matrix/{s.basename()}/raw/{bsize}'
+                cmd3_1 = f"cat {validfile} | build_matrix --matrix-format upper "
+                cmd3_2 = f"--binsize {bsize} --chrsizes {fasize} --ifile /dev/stdin "
+                cmd3_3 = f"--oprefix {hicdir}/matrix/{s.basename()}/raw/{bsize}/{s.basename()}_{bsize}"
+                cmd3 = f"{cmd3_1}{cmd3_2}{cmd3_3}"
+                
+                cmd4_1 = f"ice --results_filename {hicdir}/matrix/{s.basename()}/iced/{bsize}/{s.basename()}_{bsize}_iced.matrix "
+                cmd4_2 = "--filter_low_counts_perc 0.02 --filter_high_counts_perc 0 --max_iter 100 --eps 0.1 --remove-all-zeros-loci --output-bias 1 "
+                cmd4_3 = f"--verbose 1 {hicdir}/matrix/{s.basename()}/raw/{bsize}/{s.basename()}_{bsize}.matrix"
+                cmd4 = f"{cmd4_1}{cmd4_2}{cmd4_3}"
+                runshell(cmd1)
+                runshell(cmd2)
+                runshell(cmd3)
+                runshell(cmd4)
 
 
 def icedmatrix(ice,matrix):
@@ -107,14 +132,15 @@ def ICEMatrix(args):
     log.info(f'The results file is output to `{outfile}`')
 
 
-def CreateMatrix(args):
+def CreateNNMatrix(args):
     """
-    Create sparse matrix from HiC-Pro results
+    Create dense matrix from HiC-Pro results
+    Referenced from Condense_CisMatrix.py and https://github.com/nservant/HiC-Pro/blob/master/bin/utils/sparseToDense.py
     >>> %(prog)s -b <bed> -m <matrix> -g genome_name -c chrom_name -o outdir -s sample_name -r resolution [Options]
     """ 
     install()
-    p = argparse.ArgumentParser(prog=CreateMatrix.__name__,
-                        description=CreateMatrix.__doc__,
+    p = argparse.ArgumentParser(prog=CreateNNMatrix.__name__,
+                        description=CreateNNMatrix.__doc__,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
@@ -153,14 +179,45 @@ def CreateMatrix(args):
     sparse_matrix,N,qbeddf = cleanmatrix(args.bed,args.matrix,args.chrom)
     if args.asymmetric == "yes":
         sparse_matrix = asymmetric_matrix(sparse_matrix)
-    outfile = creatematrix(sparse_matrix,args.genome,N,qbeddf,args.outdir,args.sample,args.chrom,args.resolution)
+    outfile = createNNmatrix(sparse_matrix,args.genome,N,qbeddf,args.outdir,args.sample,args.chrom,args.resolution)
     log.info(f'The results file is output to `{outfile}`')
+
+
+def bulidMatrix(args):
+    """
+    Create the HiC-Pro result matrix based on the given resolution
+    >>> %(prog)s -d <HiC-Pro result dir> -s binsize -f fasta.size [Options]
+    """ 
+    install()
+    p = argparse.ArgumentParser(prog=bulidMatrix.__name__,
+                        description=bulidMatrix.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('-d','--dirpath',
+            dest='dirpath',type=str,required=True,
+            help='Input HiC-Pro result dir')
+    pReq.add_argument('-s','--binsize',
+            dest='binsize',type=int,required=True,
+            help='Input the bin size, also called resolution')
+    pReq.add_argument('-f','--fastasize',
+            dest='fastasize',type=str,required=True,
+            help='Input the fasta.size used for HiC-Pro run.')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    args = p.parse_args(args)
+    
+    check_file_exists(args.dirpath)
+    check_file_exists(args.fastasize)
+    buildmatrix_basesize(args.dirpath,args.binsize,args.fastasize)
 
 
 def main():
     actions = (
             ("ICEMatrix", "Use ice to process the raw matrix of HiC-Pro"),
-            ("CreateMatrix", "Create sparse matrix from HiC-Pro results"),
+            ("CreateNNMatrix", "Create dense matrix from HiC-Pro results"),
+            ("bulidMatrix", "Create the HiC-Pro result matrix based on the given resolution")
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())

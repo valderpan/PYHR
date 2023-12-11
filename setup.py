@@ -18,7 +18,7 @@ from setuptools import setup,find_packages
 
 setup(
     name="PYHR",
-    version="0.2.1",
+    version="0.3.1",
     author="Haoran Pan",
     author_email="haoranpan@foxmail.com",
     description="A custom genomics and epigenomics package",
