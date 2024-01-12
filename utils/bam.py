@@ -3,8 +3,10 @@
 # @Author : Haoran Pan
 # Date: 2022/05/31
 
-
+import re
+import sys
 import argparse
+from rich import print
 from rich.traceback import install
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
@@ -66,6 +68,53 @@ def depth_count(depthfile,outputfile=None):
                 print(output.rstrip(),file=outputfile)
         last_depth = float(coverage_depth)/float(reads_num)
         print(contig+'\t'+str(last_depth),file=outputfile)
+
+
+def read_result(files):
+    file2rowL = {}
+    for file in files:
+        with open(file) as f:
+            rowL = [line.strip() for line in f]
+        file2rowL[file] = rowL
+    return file2rowL
+
+
+def re_findends(patten,rowL):
+    for i in rowL:
+        if i.endswith(patten):
+            return int(re.findall('([0-9]+)',i)[0])
+        else:
+            continue
+
+
+def parse_result(rowL):
+    single_reads = re_findends('reads; of these:',rowL)
+    uniq_reads1 = re_findends('aligned concordantly exactly 1 time',rowL)
+    uniq_reads2 = re_findends('aligned discordantly 1 time',rowL)
+    uniq_reads3 = re_findends('aligned exactly 1 time',rowL)
+    multi_reads1 = re_findends('aligned concordantly >1 times',rowL)
+    multi_reads2 = re_findends('aligned >1 times',rowL)
+    return [single_reads,uniq_reads1,uniq_reads2,uniq_reads3,multi_reads1,multi_reads2]
+
+
+def cal_rate(reads_num_list):
+    Total_reads = reads_num_list[0]*2
+    uniq_reads = reads_num_list[1]*2+reads_num_list[2]*2+reads_num_list[3]
+    uniq_rate = uniq_reads/Total_reads*100
+    multi_reads = reads_num_list[4]*2+reads_num_list[5]
+    multi_rate = multi_reads/Total_reads*100
+    return [Total_reads,uniq_reads,uniq_rate,multi_reads,multi_rate]
+
+
+def print_output(logfile,resL,output=None):
+    print('Sample file : [bold magenta]{}[/bold magenta]'.format(logfile),file=output)
+    print('    Total reads num : {}'.format(resL[0]),file=output)
+    print('    Uniq Mapped reads num : {}'.format(resL[1]),file=output)
+    print('    Uniq Mapped reads rate : {}%'.format(round(resL[2],2)),file=output)
+    print('    Multi Mapped reads num : {}'.format(resL[3]),file=output)
+    print('    Multi Mapped reads rate : {}%'.format(round(resL[4],2)),file=output)
+    print('    Total Mapped reads num : {}'.format(resL[1]+resL[3]),file=output)
+    print('    Total Mapped reads rate : {}%'.format(round((resL[1]+resL[3])/resL[0],4)*100),file=output)
 
 
 #outside command
@@ -140,10 +189,51 @@ def StatSeqDepth(args):
         depth_count(args.depth)
 
 
+def StatMappedRate(args):
+    '''
+    Calculate the comparison of each indicator after hisat2 runs by specifying the results obtained with the --summary-file parameter or a file with output directed by `&>`(such as bowtie2)
+    Presently Known Supported Software : [hisat2]/[bowtir2]
+    >>> %(prog)s <stat.file> [Options]
+    '''
+    install()
+    p = argparse.ArgumentParser(prog=StatMappedRate.__name__,
+                        description=StatMappedRate.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+
+
+    pReq.add_argument('stat',nargs='+',
+            help='Input the statistics file specified by hisat2')
+    pOpt.add_argument('-o', '--output', type=argparse.FileType('w'),
+            help='output file [default: stdout]')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+
+    args = p.parse_args(args)
+    for file in args.stat:
+        check_file_exists(file)
+    file2rowL = read_result(args.stat)
+
+    if args.output :
+        for file in file2rowL:
+            readsL = parse_result(file2rowL[file])
+            resL = cal_rate(readsL)
+            print_output(file,resL,args.output)
+            log.info('Completed! The output file is `{}` '.format(args.output.name))
+    else:
+        for file in file2rowL:
+            readsL = parse_result(file2rowL[file])
+            resL = cal_rate(readsL)
+            print_output(file,resL)
+
+
 def main():
     actions = (
             ("StatSeqCoverage", "Count the sequencing coverage on each chromosome according to the results of `bedtools genomecov`"),
             ("StatSeqDepth", "Counting the sequencing depth of each chromosome according to the results of `samtools depth`"),
+            ("StatMappedRate", "Calculate the comparison of each indicator after hisat2 runs by specifying the results obtained with the --summary-file parameter"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
