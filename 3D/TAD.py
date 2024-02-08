@@ -41,7 +41,7 @@ def parseBoundaries(Boundaries_bed):
 def boundaries2bed(args):
     """
     Convert boundaries to bed based on cworld results
-    >>> %(prog)s <bed> [iced.matrix][Options]
+    >>> %(prog)s <bed> [Options]
     """ 
     install()
     p = argparse.ArgumentParser(prog=boundaries2bed.__name__,

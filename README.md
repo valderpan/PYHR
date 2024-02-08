@@ -25,6 +25,10 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.3.3
+    - Update [hic.utils statHiCPro] and [utils.kit CheckMd5]
+    - Debug [3D.TAD.boundaries2bed]
+
 - v0.3.2
     - move [rna.utils StatHisat2MappedRate] to [utils.bam StatHisat2MappedRate]
     - rename [utils.bam StatHisat2MappedRate] to [utils.bam StatMappedRate]

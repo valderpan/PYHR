@@ -42,7 +42,7 @@ def compare_md5(Omd5D,Nmd5D,pattern):
     Correct_match = 0
     if pattern == 'all':
         if len(Omd5D) != len(Nmd5D):
-            log.error('The number of files before and after the transfer is different, please check it !')
+            log.error('The number of files before and after the transfer is different, please check it !!!')
             sys.exit()
         else:
             log.debug('Consistent number of files before and after transfer ~')
@@ -52,41 +52,37 @@ def compare_md5(Omd5D,Nmd5D,pattern):
                     log.warning('{} md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:
-                        log.info('{} md5 value is OK !!'.format(key))
+                        log.info('{} md5 value is OK ~'.format(key))
                         Correct_match += 1
                     else:
-                        # print('='*30)
-                        log.error('{} md5 value is incorrectly checked'.format(key))
+                        log.error('{} md5 value is incorrectly checked !!!'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                         log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                        # print('='*30)
                         Error_match += 1
-        log.info('Total file number : {},\
-            Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Omd5D.keys()),
-            Correct_match,Error_match))
+        log.info('#--------------------------------------------------------------------#')
+        log.info(f'Total transferred file number : {len(Nmd5D.keys())}')
+        log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
     elif pattern == 'part':
         if len(Omd5D) != len(Nmd5D):
-            log.warning('The number of files before and after the transfer is different, but it will still run!')
+            log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
             for key in Nmd5D.keys():
                 if not key in Omd5D.keys():
                     # log.error('{} md5 value is missing'.format(key))
                     log.warning('{} md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:
-                        log.info('{} md5 value is OK !!'.format(key))
+                        log.info('{} md5 value is OK ~'.format(key))
                         Correct_match += 1
                     else:
-                        # print('='*30)
                         log.error('{} md5 value is incorrectly checked'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                         log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                        # print('='*30)
                         Error_match += 1
         else:
             log.debug('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
-        log.info('Total transferred file number : {},\
-        Correct checked file number : {}, Incorrect checked file number is {}'.format(len(Nmd5D.keys()),
-        Correct_match,Error_match))
+        log.info('#--------------------------------------------------------------------#')
+        log.info(f"Total transferred file number : {len(Nmd5D.keys())}")
+        log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
 
 
 def download_fastq(SRR_file):
@@ -188,9 +184,9 @@ def CheckMd5(args):
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
     pOpt = p.add_argument_group('Optional arguments')
-    pReq.add_argument('originalfile',
+    pReq.add_argument('OriginalMD5',
             help='Input original md5 file')
-    pReq.add_argument('transferredfile',
+    pReq.add_argument('TransferredMD5',
             help='Input the transferred file')
     pReq.add_argument('-p','--pattern',choices=['all','part'],
             help='Input the transferred file')
@@ -199,10 +195,10 @@ def CheckMd5(args):
     
     args = p.parse_args(args)
 
-    check_file_exists(args.originalfile)
-    check_file_exists(args.transferredfile)
-    od = md5(args.originalfile)
-    nd = md5(args.transferredfile)
+    check_file_exists(args.OriginalMD5)
+    check_file_exists(args.TransferredMD5)
+    od = md5(args.OriginalMD5)
+    nd = md5(args.TransferredMD5)
     pattern = args.pattern
     compare_md5(od.set_md5D(),nd.set_md5D(),pattern)
 
@@ -285,8 +281,7 @@ def main():
             ("CheckMd5", "Correct the md5 value before and after file transfer"),
             ("DownloadFastq","Download GEO database public data through python"),
             ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
-            ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file")
-            #("concatKs2ggplotdensity", "Extract query seq by header"),
+            ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())

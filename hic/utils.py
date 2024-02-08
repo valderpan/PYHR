@@ -144,8 +144,16 @@ def statsresult(dirlist,output):
                             line_list = line.split('\t')
                             if line_list[0] == 'valid_interaction_rmdup':
                                 item2num['Lib Valid Paired-end Reads'] = line_list[1]
+                            elif line_list[0] == 'trans_interaction':
+                                item2num['Trans interaction'] = line_list[1]
+                            elif line_list[0] == 'cis_interaction':
+                                item2num['Cis interaction'] = line_list[1]
+                            elif line_list[0] == 'cis_longRange':
+                                item2num['Cis-far'] = line_list[1]
+                            elif line_list[0] == 'cis_shortRange':
+                                item2num['Cis-close'] = line_list[1]
         
-        print(sample+':',file=output)
+        print(f"[bold yellow]{sample}[/bold yellow]:",file=output)
         print('Statistics of mapping',file=output)
         print('\t'+'Clean Paired-end Reads',item2num['Clean Paired-end Reads'],file=output)
         print('\t'+'Unmapped Paired-end Reads',item2num['Unmapped Paired-end Reads'],file=output)
@@ -165,13 +173,18 @@ def statsresult(dirlist,output):
         print('\t'+ 'Self Circle Rate (%)',round(int(item2num['Self Circle Paired-end Reads']) / int(item2num['Unique Mapped Paired-end Reads']) *100, 3),file=output)
         print('\t'+ 'Dumped Paired-end Reads', item2num['Dumped Paired-end Reads'],file=output)
         print('\t'+ 'Dumped Rate (%)', round(int(item2num['Dumped Paired-end Reads']) / int(item2num['Unique Mapped Paired-end Reads']) *100, 3),file=output)
-        print('\t'+ 'Interaction Paired-end Reads', item2num['Interaction Paired-end Reads'],file=output)
-        print('\t'+ 'Interaction Rate (%)',round(int(item2num['Interaction Paired-end Reads']) / int(item2num['Unique Mapped Paired-end Reads']) *100 , 3),file=output)
-        print('\t'+ 'Lib Valid Paired-end Reads', item2num['Lib Valid Paired-end Reads'],file=output)
+        print('\t'+ 'Valid Interaction Paired-end Reads', item2num['Interaction Paired-end Reads'],file=output)
+        print('\t'+ 'Valid Interaction Rate (%)',round(int(item2num['Interaction Paired-end Reads']) / int(item2num['Unique Mapped Paired-end Reads']) *100 , 3),file=output)
+        print('\t'+ 'Lib Unique Valid Paired-end Reads', item2num['Lib Valid Paired-end Reads'],file=output)
         Lib_Valid_Rate = round(int(item2num['Lib Valid Paired-end Reads']) / int(item2num['Interaction Paired-end Reads']) *100, 3)
-        print('\t', 'Lib Valid Rate (%)',Lib_Valid_Rate,file=output)
-        print('\t','Lib Dup (%)',round(100-Lib_Valid_Rate,3),file=output)
+        print('\t'+ 'Lib Unique Valid Rate (%)',Lib_Valid_Rate,file=output)
+        print('\t'+'Lib Dup Rate (%)',round(100-Lib_Valid_Rate,3),file=output)
+        print('\t'+ f" Trans interaction {item2num['Trans interaction']}({round(int(item2num['Trans interaction']) / int(item2num['Lib Valid Paired-end Reads']) *100, 3)}%)",file=output)
+        print('\t'+ f" Cis interaction {item2num['Cis interaction']}({round(int(item2num['Cis interaction']) / int(item2num['Lib Valid Paired-end Reads']) *100, 3)}%)",file=output)
+        print('\t'+ f" Cis-far {item2num['Cis-far']}({round(int(item2num['Cis-far']) / int(item2num['Cis interaction']) *100, 3)}%)",file=output)
+        print('\t'+ f" Cis-close {item2num['Cis-close']}({round(int(item2num['Cis-close']) / int(item2num['Cis interaction']) *100, 3)}%)",file=output)
 
+        
 #TODO
 def addmissingconcat(beddf,matrix,output):
     bD1 = {};approw = []
