@@ -41,7 +41,8 @@ def parseBoundaries(Boundaries_bed):
 def boundaries2bed(args):
     """
     Convert boundaries to bed based on cworld results
-    >>> %(prog)s <bed> [Options]
+    The result of running this script is equivalent to [Cworld-insulation2tads.pl] !!!
+    >>> %(prog)s <boundaries.bed> [Options]
     """ 
     install()
     p = argparse.ArgumentParser(prog=boundaries2bed.__name__,
@@ -53,7 +54,7 @@ def boundaries2bed(args):
     
     pReq.add_argument('BoundariesBed',
                     type=str,
-                    help="Input cworld's result file boundaries bed")
+                    help="Input cworld's result file boundaries.bed")
     pOpt.add_argument('-h', '--help', action='help',
             help='show help message and exit.')
 

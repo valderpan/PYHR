@@ -20,11 +20,25 @@
     - gzip
     - rich
     - scipy
+    - cooler
+    - cooltools
+    - bioframe
+    - cytoolz
+    - matplotlib
+    - pysam
 - Executable programs
     - ice
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.3.4
+    - New function [3D.AB.CountsGC]
+    - New function [3D.AB.cooltoolsAB]
+    - New function [3D.AB.plotSaddle]
+    - New function [3D.AB.ABStremgth]
+    - DEBUG [3D.TAD boundaries2bed]
+    - DEBUG [utils.kit CheckMd5]
+
 - v0.3.3
     - Update [hic.utils statHiCPro] and [utils.kit CheckMd5]
     - Debug [3D.TAD.boundaries2bed]

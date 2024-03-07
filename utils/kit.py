@@ -46,8 +46,8 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             sys.exit()
         else:
             log.debug('Consistent number of files before and after transfer ~')
-            for key in Nmd5D.keys():
-                if not key in Omd5D.keys():
+            for key in Omd5D.keys():
+                if not key in Nmd5D.keys():
                     # log.error('{} md5 value is missing'.format(key))
                     log.warning('{} md5 value is missing'.format(key))
                 else:
@@ -65,9 +65,8 @@ def compare_md5(Omd5D,Nmd5D,pattern):
     elif pattern == 'part':
         if len(Omd5D) != len(Nmd5D):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
-            for key in Nmd5D.keys():
-                if not key in Omd5D.keys():
-                    # log.error('{} md5 value is missing'.format(key))
+            for key in Omd5D.keys():
+                if not key in Nmd5D.keys():
                     log.warning('{} md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:

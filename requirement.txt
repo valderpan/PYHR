@@ -10,5 +10,12 @@
     - gzip
     - rich
     - scipy
+    - cooler
+    - cooltools
+    - bioframe
+    - cytoolz
+    - matplotlib
+    - pysam
 - Executable programs
     - ice
+    - build_matrix [from HiC-Pro/scripts/]
