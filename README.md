@@ -26,22 +26,34 @@
     - cytoolz
     - matplotlib
     - pysam
+    - coolpuppy
 - Executable programs
     - ice
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.4.1
+    - Rename [PYHR.3D] to [PYHR.threeD]
+    - New module [threeD.base]
+    - New function [threeD.TAD ATA]
+    - Move [threeD.AB read_cool] to [threeD.base read_cool]
+    - Move [threeD.AB readGCfile] to [threeD.base readGCfile]
+    - Move [threeD.AB getResolution] to [threeD.base getResolution]
+    - Move [threeD.AB countGC] to [threeD.base countGC]
+    - Move [threeD.AB filter_chrom] to [threeD.base filter_chrom]
+    - Move [threeD.AB calExpectedCis] to [threeD.base calExpectedCis]
+
 - v0.3.4
-    - New function [3D.AB.CountsGC]
-    - New function [3D.AB.cooltoolsAB]
-    - New function [3D.AB.plotSaddle]
-    - New function [3D.AB.ABStremgth]
+    - New function [3D.AB CountsGC]
+    - New function [3D.AB cooltoolsAB]
+    - New function [3D.AB plotSaddle]
+    - New function [3D.AB ABStremgth]
     - DEBUG [3D.TAD boundaries2bed]
     - DEBUG [utils.kit CheckMd5]
 
 - v0.3.3
     - Update [hic.utils statHiCPro] and [utils.kit CheckMd5]
-    - Debug [3D.TAD.boundaries2bed]
+    - Debug [3D.TAD boundaries2bed]
 
 - v0.3.2
     - move [rna.utils StatHisat2MappedRate] to [utils.bam StatHisat2MappedRate]
@@ -50,6 +62,6 @@
 
 - v0.3.1: 
     - move [3D.matrix] to [hic.matrix]
-    - New module [3D.TAD]; new function [3D.TAD.boundaries2bed]
+    - New module [3D.TAD]; new function [3D.TAD boundaries2bed]
     - rename [hic.matrix CreateMatrix] to [hic.matrix CreateNNMatrix]
     - rename [hic.utils hicprostats] to [hic.utils statHiCPro]
