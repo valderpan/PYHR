@@ -67,13 +67,13 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
             for key in Omd5D.keys():
                 if not key in Nmd5D.keys():
-                    log.warning('{} md5 value is missing'.format(key))
+                    log.warning('`{}` md5 value is missing'.format(key))
                 else:
                     if Nmd5D[key] == Omd5D[key]:
-                        log.info('{} md5 value is OK ~'.format(key))
+                        log.info('`{}` md5 value is OK ~'.format(key))
                         Correct_match += 1
                     else:
-                        log.error('{} md5 value is incorrectly checked'.format(key))
+                        log.error('`{}` md5 value is incorrectly checked'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                         log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
                         Error_match += 1
@@ -175,6 +175,7 @@ def CheckMd5(args):
     """
     Correct the md5 value before and after file transfer
     >>> %(prog)s <Original md5 file> <transferred md5 file> [Options]
+    -p [pattern] means Whether the new md5 file after transmission is part or all of the Original md5 file
     """ 
     install()
     p = argparse.ArgumentParser(prog=CheckMd5.__name__,
@@ -204,8 +205,8 @@ def CheckMd5(args):
 
 def DownloadFastq(args):
     """
-    Download GEO database public data through python
-    Attention: The SRR file must contain two columns:[SRRnumber,sample_name]
+    Download GEO database public data and convert it to .fastq.gz through python
+    Attention: The SRR file must contain two columns:[SRRnumber,sample_name] !!!
     >>> %(prog)s <SRR_with_name file> [Options]
     """ 
     install()
@@ -278,7 +279,7 @@ def EvaluateSeqDepth(args):
 def main():
     actions = (
             ("CheckMd5", "Correct the md5 value before and after file transfer"),
-            ("DownloadFastq","Download GEO database public data through python"),
+            ("DownloadFastq","Download GEO database public data and convert it to .fastq.gz through python"),
             ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
             ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file"),
         )
