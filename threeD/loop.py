@@ -4,6 +4,7 @@
 # Date: 2022/10/08
 
 
+import os
 import re
 import sys
 import argparse
@@ -67,6 +68,7 @@ def parse_inter(loop_i1,loop_i2):
                             loop_i2_q.append(int(index2))
     return loop_i1_q,loop_i2_q
 
+
 def get_querydf(index,refdf):
     qdf = refdf[refdf.index.isin(index)]
     qdf = qdf.sort_values(['X1','X2'])
@@ -85,7 +87,7 @@ def findOverlapLoops(args):
     Find loops with overlap in both left and right anchors in both sets of data
     =============================================================================================
     Output:
-    .overlap.bedpe: loops having overlap with another set of data
+    .common.bedpe: loops having overlap with another set of data
     .specific.bedpe: loops that no overlap with another set of data, and it is self-specific loop
     =============================================================================================
     >>> %(prog)s -a loop_a -b loop_b [Options]
@@ -110,32 +112,27 @@ def findOverlapLoops(args):
     check_file_exists(args.loopb)
     loopadf = read_loop(args.loopa)
     loopbdf = read_loop(args.loopb)
-    log.info('Save {} loop data to IntervalTree...'.format(args.loopa))
+    log.info('Save {} loop data to IntervalTree...'.format(os.path.basename(args.loopa)))
     loopa_inter = loopintervale(loopadf)
-    log.info('Save {} loop data to IntervalTree...'.format(args.loopb))
+    log.info('Save {} loop data to IntervalTree...'.format(os.path.basename(args.loopb)))
     loopb_inter = loopintervale(loopbdf)
-    log.info('Find overlap Loops....')
+    log.info('Find Common Loops....')
     loopa_q,loopb_q = parse_inter(loopa_inter,loopb_inter)
 
-    
-    common_adf = get_querydf(loopa_q,loopadf)
-    specific_adf = get_querydf_other(loopa_q,loopadf)
-    log.info('The number of original loops of {} is {}'.format(args.loopa,loopadf.shape[0]))
-    log.info('The number of common loops of {}.overlap.bedpe is {}'.format(args.loopa,common_adf.shape[0]))
-    log.info('The percentage of overlap loops is {}'.format(round(common_adf.shape[0]/loopadf.shape[0],2)*100))
-    log.info('The number of specific loop of {} is {}'.format(args.loopa,loopadf.shape[0]-common_adf.shape[0]))
-    common_adf.to_csv('{}.overlap.bedpe'.format(args.loopa),sep='\t',header=False,index=False)
-    specific_adf.to_csv('{}.specific.bedpe'.format(args.loopa),sep='\t',header=False,index=False)
+    a=os.path.basename(args.loopa)
+    log.info('{}'.format(a))
+    def run_common(loop,loop_q,loop_df):
+        common_adf = get_querydf(loop_q,loop_df)
+        specific_adf = get_querydf_other(loop_q,loop_df)
+        log.info('The number of original loops of {} is {}'.format(os.path.basename(loop),loop_df.shape[0]))
+        log.info('The number of common loops of {}.common.bedpe is {}'.format(os.path.basename(loop),common_adf.shape[0]))
+        log.info('The percentage of common loops is {}'.format(round(common_adf.shape[0]/loop_df.shape[0],2)*100))
+        log.info('The number of specific loop of {} is {}'.format(os.path.basename(loop),loop_df.shape[0]-common_adf.shape[0]))
+        common_adf.to_csv('{}.common.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
+        specific_adf.to_csv('{}.specific.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
 
-
-    common_bdf = get_querydf(loopb_q,loopbdf)
-    specific_bdf = get_querydf_other(loopb_q,loopbdf)
-    log.info('The number of original loops of {} is {}'.format(args.loopb,loopbdf.shape[0]))
-    log.info('The number of common loops of {}.overlap.bedpe is {}'.format(args.loopb,common_bdf.shape[0]))
-    log.info('The percentage of overlap loops is {}'.format(round(common_bdf.shape[0]/loopbdf.shape[0],2)*100))
-    log.info('The number of specific loop of {} is {}'.format(args.loopb,loopbdf.shape[0]-common_bdf.shape[0]))
-    common_bdf.to_csv('{}.overlap.bedpe'.format(args.loopb),sep='\t',header=False,index=False)
-    specific_bdf.to_csv('{}.specific.bedpe'.format(args.loopb),sep='\t',header=False,index=False)
+    run_common(args.loopa,loopa_q,loopadf)
+    run_common(args.loopb,loopb_q,loopbdf)
 
     
 def main():

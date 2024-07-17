@@ -170,6 +170,7 @@ def EvaluatingSeqDepth(seqpath,output):
                 table.add_row('+'.join(value),str(base),str(depth))
     console.print(table)
 
+
 ## outside command 
 def CheckMd5(args):
     """

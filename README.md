@@ -32,6 +32,11 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.4.3
+    - DEBUG [utils.kit CheckMd5]
+    - DEBUG [hic.loop findOverlapLoops]
+    - New function [hic.utils DownsampleValid]
+
 - v0.4.1
     - Rename [PYHR.3D] to [PYHR.threeD]
     - New module [threeD.base]

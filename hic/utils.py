@@ -185,8 +185,16 @@ def statsresult(dirlist,output):
         print('\t'+ f" Cis-close {item2num['Cis-close']}({round(int(item2num['Cis-close']) / int(item2num['Cis interaction']) *100, 3)}%)",file=output)
 
         
-#TODO
-def addmissingconcat(beddf,matrix,output):
+def downsample_valid(validfile,number,output):
+    df = pd.read_table(validfile,sep='\t',header=None)
+    log.info(f'The original number of reads is {df.shape[0]:,}')
+    df = df.sample(n=number)
+    log.info(f'The downsampled number of reads is {df.shape[0]:,}')
+    df.to_csv(output,sep='\t',header=None,index=None)
+    log.info(f'Save the downsampled reads to `{output}`')
+
+
+def addmissingconcat(beddf,matrix,output): #TODO
     bD1 = {};approw = []
     for _,row in matrix.iterrows():
         bD1[str(int(row['bin1']))+'_'+str(int(row['bin2']))] = row['score']
@@ -316,11 +324,43 @@ def statHiCPro(args):
     else:
         statsresult(sample_dirs,args.output)
 
+
+def DownsampleValid(args):
+    """
+    Downsampling the valid pairs reads
+    ======================================================================================================================
+    Attention: This script outputs the format of the original file. ATAC-seq and TAD, Loop analysis must be downsampled!!!
+    ======================================================================================================================
+    >>> %(prog)s <allValidPairs file> -n numbers -o output.allValidPairs [Options]
+    """
+    install()
+    p = argparse.ArgumentParser(prog=DownsampleValid.__name__,
+                        description=DownsampleValid.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('reads',
+            help='Input the reads file that requires downsampling, could be bam or allValidPairs file')
+    pReq.add_argument('-n','--number',type=int,required=True,
+            help='Input the number of reads to be downsampled')
+    pReq.add_argument('-o','--output',required=True,
+            help='Output the downsampled reads file [.allValidPairs]')
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    
+    args = p.parse_args(args)
+
+    check_file_exists(args.reads)
+    downsample_valid(args.reads,args.number,args.output)
+
+
 def main():
     actions = (
             ("modifyMatrixIndex", "The bin index in HiC-Pro iced_matirx should start from 1 instead of 0"),
             ("removeCtgMatrix", "Delete the contig level interaction signal from the Hi-C matrix file"),
             ("statHiCPro", "Convert HiC-Pro output stats results into publishable level tables\n"),
+            ("DownsampleValid","Downsampling the valid pairs reads"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
