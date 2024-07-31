@@ -6,6 +6,7 @@
 
 import re
 import sys
+import math
 import argparse
 import numpy as np
 import pandas as pd
@@ -104,6 +105,67 @@ def icedmatrix(ice,matrix):
         log.error(f'File prefix extraction error, the obtained prefix was {prefix}')
     return f"{prefix[0]}_iced.matrix"
 
+
+class trans_hic():
+    def __init__(self,tools,value_type,norm_type,genome,hic,chr,start,end,binsize,outdir,outprefix):
+        self.juicer_tools=tools
+        self.value = value_type
+        self.normalization = norm_type
+        self.hic= hic
+        self.chr = chr
+        self.start= start
+        self.end = end
+        self.outdir = outdir
+        self.bin = binsize
+        self.genome = genome
+        self.outdir = outdir
+        self.prefix = outprefix
+
+    def extract_matrix(self):
+        juicer_dump_mat=f"{self.outdir}/{self.prefix}_{self.value}_{self.normalization}_{self.chr}_{self.start}_{self.end}_dump.mat"
+        self.juicer_dump_mat=juicer_dump_mat
+        region="{0}:{1}:{2} {0}:{1}:{2}".format(self.chr,str(self.start),str(self.end))
+        log.info('Step3. Juicer dump matrix....')
+        cmd=f"java -jar {self.juicer_tools} dump {self.value} {self.normalization} {self.hic}  {region} BP {self.bin} {juicer_dump_mat}"
+        runshell(cmd)
+        log.info(f'The dump results is output to `{self.juicer_dump_mat}`')
+
+    def reshape_matrix(self):
+        #-----------N*N matrix---------------------
+        self.hitc_matrix=f"{self.outdir}/{self.prefix}_{self.value}_{self.normalization}_{self.chr}_{self.start}_{self.end}.hitc.mat"
+        mat=pd.read_table(self.juicer_dump_mat,names=['frag1','frag2','contacts'])
+        check_file_exists(self.juicer_dump_mat)
+        log.info('Step2. Reshape matrix....')
+        min=math.ceil(int(self.start)/self.bin)*self.bin
+        max=int(int(self.end)/self.bin)*self.bin
+        N=int(self.end/self.bin)-math.ceil(self.start/self.bin)+1
+        #---------------------- add header --------------------------
+        inddf=np.arange(1,N+1)
+        headers_ref=[self.genome for x in inddf]
+        bin_num_df=pd.Series(inddf).apply(lambda x : str(x))
+        headers_ref=pd.Series(headers_ref)
+        chromdf=pd.Series([self.chr for x in list(range(N))])
+        startdf=pd.Series(inddf*self.bin+min)
+        enddf=pd.Series((inddf+1)*self.bin+min)
+        headers_suf=chromdf.str.cat(startdf.apply(lambda x :str(x)),sep=':')
+        headers_suf=headers_suf.str.cat(enddf.apply(lambda x:str(x)),sep="-")
+        headers=bin_num_df.str.cat([headers_ref,headers_suf],sep="|")
+        headers=list(headers)
+
+        mat['b1']=mat['frag1'].apply(lambda x: (x-min)/self.bin)
+        mat['b2']=mat['frag2'].apply(lambda x: (x-min)/self.bin)
+        counts=sparse.coo_matrix((mat['contacts'],(mat['b1'],mat['b2'])),shape=(N, N),dtype=float).toarray()
+        diag_matrix=np.diag(np.diag(counts))
+        counts=counts.T + counts
+        counts=counts-diag_matrix-diag_matrix
+        df=pd.DataFrame(counts)
+        df.columns=headers
+        df.index=headers
+        df.to_csv(self.hitc_matrix,sep="\t")
+        log.info(f'The reshape matrix results is output to `{self.hitc_matrix}`')
+        return df
+
+
 ## outside command
 def ICEMatrix(args):
     """
@@ -134,7 +196,7 @@ def ICEMatrix(args):
 
 def CreateNNMatrix(args):
     """
-    Create dense matrix from HiC-Pro results
+    Create dense matrix from HiC-Pro results [.bed+.matrix]
     Referenced from Condense_CisMatrix.py and https://github.com/nservant/HiC-Pro/blob/master/bin/utils/sparseToDense.py
     >>> %(prog)s -b <bed> -m <matrix> -g genome_name -c chrom_name -o outdir -s sample_name -r resolution [Options]
     """ 
@@ -213,11 +275,53 @@ def bulidMatrix(args):
     buildmatrix_basesize(args.dirpath,args.binsize,args.fastasize)
 
 
+def Dump2Matrix(args):
+    """
+    Extracting hic matrix based on juicer dump and converting it[3 columns tab] into N*N matrix.
+    >>> %(prog)s <juicer_tools.jar> -n normalization methods -t value type --genome genome_name --hic <.hic> --chr seqname --start start --end end --binsize resulotion --outdir output_dir --outprefix out_prefix [Options]
+    """
+    install()
+    p = argparse.ArgumentParser(prog=Dump2Matrix.__name__,
+                        description=Dump2Matrix.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+
+    pReq.add_argument('tools',type=str,
+                      help='Specify path to juicer_tools.jar')
+    pReq.add_argument('-n','--normalization',type=str,
+                      help='Normlization methods [KR]', default='KR', choices=['KR','NONE','VC','VC_SQRT'])
+    pReq.add_argument('-t','--type',type=str,
+                        help='Type of matrix want to extract [observed]', default='observed', choices=['observed','oe'])
+    pReq.add_argument('-g','--genome', type=str,help='genome name,such as hg19,hg38...')
+    pReq.add_argument('--hic', type=str,help='Input .hic file')
+    pReq.add_argument('--chr', type=str,help='chromosome seqname')
+    pReq.add_argument('--start', type=int,help='start position')
+    pReq.add_argument('--end', type=int,help='end position')
+    pReq.add_argument('--binsize', type=int,help='binsize,or resulotion')
+    pReq.add_argument('--outdir', type=str,help='output directory')
+    pReq.add_argument('--outprefix', type=str,help='output prefix')
+    pOpt.add_argument('-h', '--help',action='help',
+            help='show help message and exit.')
+    
+    args = p.parse_args(args)
+    check_file_exists(args.tools)
+    my_instance = trans_hic(args.tools, args.type,
+                            args.normalization,  
+                            args.genome, args.hic, 
+                            args.chr, args.start, args.end, 
+                            args.binsize, args.outdir, args.outprefix)
+    my_instance.extract_matrix()
+    my_instance.reshape_matrix()
+
+
 def main():
     actions = (
             ("ICEMatrix", "Use ice to process the raw matrix of HiC-Pro"),
             ("CreateNNMatrix", "Create dense matrix from HiC-Pro results"),
-            ("bulidMatrix", "Create the HiC-Pro result matrix based on the given resolution")
+            ("bulidMatrix", "Create the HiC-Pro result matrix based on the given resolution"),
+            ("Dump2Matrix", "Extracting hic matrix based on juicer dump and converting it[3 columns tab] into N*N matrix (.hic to N*N)" ),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())
