@@ -172,7 +172,7 @@ def EvaluatingSeqDepth(seqpath,output):
 
 
 ## outside command 
-def CheckMd5(args):
+def CheckMD5(args):
     """
     Correct the md5 value before and after file transfer
     >>> %(prog)s <Original md5 file> <transferred md5 file> [Options]
@@ -190,6 +190,7 @@ def CheckMd5(args):
     pReq.add_argument('TransferredMD5',
             help='Input the transferred file')
     pReq.add_argument('-p','--pattern',choices=['all','part'],
+                      required=True,
             help='Input the transferred file')
     pOpt.add_argument('-h', '--help', action='help',
             help='show help message and exit.')
@@ -207,8 +208,7 @@ def CheckMd5(args):
 def DownloadFastq(args):
     """
     Download GEO database public data and convert it to .fastq.gz through python
-    Attention: The SRR file must contain two columns:[SRRnumber,sample_name] !!!
-    >>> %(prog)s <SRR_with_name file> [Options]
+    Attention: The SRR file must contain two columns:[SRRnumber sample_name],separated by space or tab !    >>> %(prog)s <SRR_with_name file> [Options]
     """ 
     install()
     p = argparse.ArgumentParser(prog=DownloadFastq.__name__,
@@ -279,7 +279,7 @@ def EvaluateSeqDepth(args):
 
 def main():
     actions = (
-            ("CheckMd5", "Correct the md5 value before and after file transfer"),
+            ("CheckMD5", "Correct the md5 value before and after file transfer"),
             ("DownloadFastq","Download GEO database public data and convert it to .fastq.gz through python"),
             ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
             ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file"),

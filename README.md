@@ -32,6 +32,10 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.4.5
+    - DEBUG [threeD.loop read_loop AND findOverlapLoops]
+    - Rename [utils.kit CheckMd5] to [utils.kit CheckMD5]
+
 - v0.4.4
     - New function [hic.matrix Dump2Matrix]
 
