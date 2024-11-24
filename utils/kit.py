@@ -38,6 +38,7 @@ class md5():
 
 
 def compare_md5(Omd5D,Nmd5D,pattern):
+    all_files = len(Omd5D.keys())
     Error_match = 0
     Correct_match = 0
     if pattern == 'all':
@@ -62,6 +63,8 @@ def compare_md5(Omd5D,Nmd5D,pattern):
         log.info('#--------------------------------------------------------------------#')
         log.info(f'Total transferred file number : {len(Nmd5D.keys())}')
         log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
+        if Correct_match == all_files:
+            log.info('All files are correctly checked ~')
     elif pattern == 'part':
         if len(Omd5D) != len(Nmd5D):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
@@ -179,8 +182,8 @@ def CheckMD5(args):
     -p [pattern] means Whether the new md5 file after transmission is part or all of the Original md5 file
     """ 
     install()
-    p = argparse.ArgumentParser(prog=CheckMd5.__name__,
-                        description=CheckMd5.__doc__,
+    p = argparse.ArgumentParser(prog=CheckMD5.__name__,
+                        description=CheckMD5.__doc__,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')

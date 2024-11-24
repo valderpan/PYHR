@@ -189,15 +189,15 @@ def StatSeqDepth(args):
         depth_count(args.depth)
 
 
-def StatMappedRate(args):
+def StatMappedRateHisat2(args):
     '''
     Calculate the comparison of each indicator after hisat2 runs by specifying the results obtained with the --summary-file parameter or a file with output directed by `&>`(such as bowtie2)
     Presently Known Supported Software : [hisat2]/[bowtir2]
     >>> %(prog)s <stat.file> [Options]
     '''
     install()
-    p = argparse.ArgumentParser(prog=StatMappedRate.__name__,
-                        description=StatMappedRate.__doc__,
+    p = argparse.ArgumentParser(prog=StatMappedRateHisat2.__name__,
+                        description=StatMappedRateHisat2.__doc__,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
@@ -233,7 +233,7 @@ def main():
     actions = (
             ("StatSeqCoverage", "Count the sequencing coverage on each chromosome according to the results of `bedtools genomecov`"),
             ("StatSeqDepth", "Counting the sequencing depth of each chromosome according to the results of `samtools depth`"),
-            ("StatMappedRate", "Calculate the comparison of each indicator after hisat2 runs by specifying the results obtained with the --summary-file parameter"),
+            ("StatMappedRateHisat2", "Calculate the comparison of each indicator after hisat2 runs by specifying the results obtained with the --summary-file parameter"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())

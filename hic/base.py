@@ -188,7 +188,7 @@ def statsresult(dirlist,output):
 def downsample_valid(validfile,number,output):
     df = pd.read_table(validfile,sep='\t',header=None)
     log.info(f'The original number of reads is {df.shape[0]:,}')
-    df = df.sample(n=number)
+    df = df.sample(n=number,replace=False)
     log.info(f'The downsampled number of reads is {df.shape[0]:,}')
     df.to_csv(output,sep='\t',header=None,index=None)
     log.info(f'Save the downsampled reads to `{output}`')

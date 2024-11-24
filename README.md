@@ -32,6 +32,11 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.4.6
+    - DEBUG [utils.kit compare_md5] 
+    - Rename [hic.utils] to [hic.base]
+    - Rename [utils.Bam StatMappedRate] to [utils.Bam StatMappedRateHisat2]
+
 - v0.4.5
     - DEBUG [threeD.loop read_loop AND findOverlapLoops]
     - Rename [utils.kit CheckMd5] to [utils.kit CheckMD5]
