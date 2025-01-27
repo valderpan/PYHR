@@ -58,33 +58,44 @@ def compare_md5(Omd5D,Nmd5D,pattern):
                     else:
                         log.error('{} md5 value is incorrectly checked !!!'.format(key))
                         log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
-                        log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                        log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
                         Error_match += 1
         log.info('#--------------------------------------------------------------------#')
         log.info(f'Total transferred file number : {len(Nmd5D.keys())}')
         log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
+        log.info('#=========================MD5 SUMMARY================================#')
         if Correct_match == all_files:
-            log.info('All files are correctly checked ~')
+            log.info('#                 [bold green blink] All files are correctly checked ~ [/]                #', extra={"markup": True})
+        else:
+            log.warning('#     [bold red] Not all files are correctly checked, please check it !!! [/]     #', extra={"markup": True})
+        log.info('#====================================================================#')
     elif pattern == 'part':
         if len(Omd5D) != len(Nmd5D):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
-            for key in Omd5D.keys():
-                if not key in Nmd5D.keys():
-                    log.warning('`{}` md5 value is missing'.format(key))
-                else:
-                    if Nmd5D[key] == Omd5D[key]:
-                        log.info('`{}` md5 value is OK ~'.format(key))
-                        Correct_match += 1
-                    else:
-                        log.error('`{}` md5 value is incorrectly checked'.format(key))
-                        log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
-                        log.debug('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
-                        Error_match += 1
         else:
-            log.debug('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
+            log.warning('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
+        for key in Omd5D.keys():
+            if not key in Nmd5D.keys():
+                log.warning('`{}` md5 value is missing'.format(key))
+            else:
+                if Nmd5D[key] == Omd5D[key]:
+                    log.info('`{}` md5 value is OK ~'.format(key))
+                    Correct_match += 1
+                else:
+                    log.error('`{}` md5 value is incorrectly checked'.format(key))
+                    log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
+                    log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                    Error_match += 1
         log.info('#--------------------------------------------------------------------#')
+        log.info(f'Total original file number : {len(Omd5D.keys())}')
         log.info(f"Total transferred file number : {len(Nmd5D.keys())}")
         log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
+        log.info('#=========================MD5 SUMMARY================================#')
+        if Correct_match == len(Nmd5D.keys()):
+            log.info('#                 [bold green blink] All files are correctly checked ~ [/]                #', extra={"markup": True})
+        else:
+            log.warning('#     [bold red] Not all files are correctly checked, please check it !!! [/]     #', extra={"markup": True})
+        log.info('#====================================================================#')
 
 
 def download_fastq(SRR_file):

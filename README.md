@@ -32,6 +32,9 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- v0.5.1
+    - DEBUG [utils.kit compare_md5]
+    
 - v0.4.6
     - DEBUG [utils.kit compare_md5] 
     - Rename [hic.utils] to [hic.base]
