@@ -52,20 +52,20 @@ def loopintervale(loopdf):
 
 def parse_inter(loop_i1,loop_i2):
     loop_i1_q = [];loop_i2_q =[]
-    for chr in loop_i1.keys():
-        if chr in loop_i2.keys():
-            for inter in sorted(loop_i1[chr]):
-                if loop_i2[chr].overlap(inter):
-                    other_a1 = list(inter.data.values())[0]
-                    chr1,start1,end1,index1 = other_a1.split('-')
-                    a1_inter = Interval(int(start1),int(end1),'{}-{}'.format(chr1,index1))
-                    for i in loop_i2[chr].overlap(inter):
-                        other_a2 = list(i.data.values())[0]
-                        chr2,start2,end2,index2 = other_a2.split('-')
-                        a2_inter = Interval(int(start2),int(end2),'{}-{}'.format(chr1,index1))
-                        if a1_inter.overlaps(a2_inter):
-                            loop_i1_q.append(int(index1))
-                            loop_i2_q.append(int(index2))
+    common_keys = list(set(loop_i1.keys()) & set(loop_i2.keys()))
+    for chr in common_keys:
+        for inter in sorted(loop_i1[chr]):
+            if loop_i2[chr].overlap(inter):
+                other_a1 = list(inter.data.values())[0]
+                chr1,start1,end1,index1 = other_a1.split('-')
+                a1_inter = Interval(int(start1),int(end1),'{}-{}'.format(chr1,index1))
+                for i in loop_i2[chr].overlap(inter):
+                    other_a2 = list(i.data.values())[0]
+                    chr2,start2,end2,index2 = other_a2.split('-')
+                    a2_inter = Interval(int(start2),int(end2),'{}-{}'.format(chr2,index2))
+                    if a1_inter.overlaps(a2_inter):
+                        loop_i1_q.append(int(index1))
+                        loop_i2_q.append(int(index2))
     return loop_i1_q,loop_i2_q
 
 
@@ -80,6 +80,31 @@ def get_querydf_other(index,refdf):
     qdf = qdf.sort_values(['X1','X2'])
     return qdf
 
+
+def run_common(loop,loop_q,loop_df):
+    sampleID = re.search(r'^(\d+_\w+_\w+)', os.path.basename(loop)).group(1)
+    common_adf = get_querydf(loop_q,loop_df)
+    specific_adf = get_querydf_other(loop_q,loop_df)
+    log.info('#-----------------------------{}-----------------------------#'.format(sampleID))
+    log.info('{} | Total original loops is {}'.format(os.path.basename(loop),loop_df.shape[0]))
+    log.info('{} | Common loops is {}'.format(os.path.basename(loop),common_adf.shape[0]))
+    log.info('{} | Percentage of common loops is {}'.format(os.path.basename(loop),round(common_adf.shape[0]/loop_df.shape[0],2)*100))
+    log.info('{} | Specific loop is {}'.format(os.path.basename(loop),loop_df.shape[0]-common_adf.shape[0]))
+    common_adf.to_csv('{}.common.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
+    specific_adf.to_csv('{}.specific.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
+    log.info('Output [bold magenta]overlap loops[/] to [magenta]{}.common.bedpe[/]'.format(os.path.basename(loop)),extra={"markup": True})
+    log.info('Output [bold magenta]specific loops[/] to [magenta]{}.specific.bedpe[/]'.format(os.path.basename(loop)),extra={"markup": True})
+
+    #将上述各类数值生成一个data.frame并输出
+    data = OrderedDict()
+    data['SampleID'] = [sampleID]
+    data['Total_Loops'] = [loop_df.shape[0]]
+    data['Common_Loops'] = [common_adf.shape[0]]
+    data['Percentage_Common_Loops'] = [round(common_adf.shape[0]/loop_df.shape[0],2)*100]
+    data['Specific_Loops'] = [loop_df.shape[0]-common_adf.shape[0]]
+    data_df = pd.DataFrame(data)
+    data_df.to_csv('{}.parser_loop_summary.txt'.format(sampleID),sep='\t',index=False)
+    log.info('Output [bold magenta]parsed loop summary[/] to [magenta]{}.parser_loop_summary.txt[/]'.format(sampleID),extra={"markup": True})
 
 ## outside command 
 def findOverlapLoops(args):
@@ -116,9 +141,17 @@ def findOverlapLoops(args):
             help='show help message and exit.')
     
     args = p.parse_args(args)
-
     check_file_exists(args.loopa)
     check_file_exists(args.loopb)
+
+    sampleID_a = re.search(r'\d{4}', args.loopa).group()
+    sampleID_b = re.search(r'\d{4}', args.loopb).group()
+    if sampleID_a != sampleID_b:
+        log.warning('The two loop files [bold red]are not from the same individual[/], but program will continue to compare the loops.....',extra={"markup": True})
+        # sys.exit(1)
+    else:
+        log.info('The two loop files [bold red]are from the same individual[/], continue to compare the loops......',extra={"markup": True})
+    
     loopadf = read_loop(args.loopa)
     loopbdf = read_loop(args.loopb)
     log.info('Save {} loop data to IntervalTree...'.format(os.path.basename(args.loopa)))
@@ -128,17 +161,7 @@ def findOverlapLoops(args):
     log.info('Find Common Loops....')
     loopa_q,loopb_q = parse_inter(loopa_inter,loopb_inter)
 
-    a=os.path.basename(args.loopa)
-    log.info('{}'.format(a))
-    def run_common(loop,loop_q,loop_df):
-        common_adf = get_querydf(loop_q,loop_df)
-        specific_adf = get_querydf_other(loop_q,loop_df)
-        log.info('{} | Total original loops is {}'.format(os.path.basename(loop),loop_df.shape[0]))
-        log.info('{} | Common loops is {}'.format(os.path.basename(loop),common_adf.shape[0]))
-        log.info('{} | Percentage of common loops is {}'.format(os.path.basename(loop),round(common_adf.shape[0]/loop_df.shape[0],2)*100))
-        log.info('{} | Specific loop is {}'.format(os.path.basename(loop),loop_df.shape[0]-common_adf.shape[0]))
-        common_adf.to_csv('{}.common.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
-        specific_adf.to_csv('{}.specific.bedpe'.format(os.path.basename(loop)),sep='\t',header=False,index=False)
+   
 
     run_common(args.loopa,loopa_q,loopadf)
     run_common(args.loopb,loopb_q,loopbdf)
