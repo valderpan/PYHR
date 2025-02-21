@@ -32,6 +32,10 @@
     - build_matrix [from HiC-Pro/scripts/]
 
 ## Changelog
+- 0.5.3
+    - Update [apps.base runshell]
+    - New module [utils.vcf]
+    - New function [utils.vcf replaceVCFsampleID]
 - 0.5.2
     - DEBUG [threeD.loop parse_inter AND run_common]
 

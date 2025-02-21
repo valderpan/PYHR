@@ -272,10 +272,11 @@ def read_file(file,Names=None):
 
 
 def runshell(cmd):
-    log.info(f'Run the shell command: {cmd}')
-    return_code = subprocess.call(cmd, shell=True)
-    if return_code != 0:
-        raise Exception(f"Shell command `{cmd}` failed to execute !")
+    log.info(f'Run the shell command: [bold yellow blink]{cmd}[/]',extra={"markup":True})
+    return_code = subprocess.run(cmd, shell=True,check=True)
+    # if return_code != 0:
+    #     raise Exception(f"Shell command `{cmd}` failed to execute !")
+    return return_code.returncode
 
 if __name__ == "__main__":
     main()
