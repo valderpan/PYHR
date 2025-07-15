@@ -22,6 +22,22 @@ from PYHR.apps.base import ActionDispatcher,richlog,check_file_exists
 log = richlog()
 
 
+def set_gff_type(gff_path):
+    """
+    Set the type of gff file based on its extension.
+    """
+    if gff_path.endswith('.gff3'):
+        gff_type = 'gff'
+        log.debug('File is [yellow blink]gff3[/] standard.',extra={"markup": True})
+    elif gff_path.endswith('.gtf'):
+        gff_type = 'gtf'
+        log.debug('File is [yellow blink]gtf[/] standard.',extra={"markup": True})
+    else:
+        log.error('Unsupported GFF file format. Please provide a .gff or .gtf file.')
+        sys.exit(1)
+    return gff_type
+
+
 def import_gff(gff_path, _type=None):
     compression = 'gzip' if gff_path.endswith('.gz') else 'infer'
     gff_df = pd.read_csv(gff_path, sep='\t', 
@@ -42,12 +58,16 @@ def import_gff(gff_path, _type=None):
     return gff_df 
 
 
-def get_Attr_dict(attributes):
+def get_Attr_dict(attributes,gff_type):
     """
     将gff文件的第九列attributes存储为字典
     """
-    db = dict(map(lambda x: x.split('='), 
-                [i for i in attributes.split(';') if i]))
+    if gff_type == 'gff':
+        db = dict(map(lambda x: x.split('='), 
+                    [i for i in attributes.split(';') if i]))
+    else:
+        db = dict(map(lambda x: x.split(' '), 
+                    [i for i in attributes.split('; ') if i]))
     return db
 
 
@@ -95,17 +115,17 @@ def createDB(gff, dbfn=None):
     return db
 
 
-def gff2bed(gff_df,type,keys,output=None):
+def gff2bed(gff_df,gff_type,type,keys,output=None):
     num = 0
     qdf = gff_df[gff_df['type'] ==  type]
     for index,row in qdf.iterrows():
-        db = get_Attr_dict(row['attributes'])
+        db = get_Attr_dict(row['attributes'],gff_type)
         if not ',' in keys[0]:
             if not keys[0] in db.keys():
                 log.error(f'[{keys[0]}] is not present in the attributes with the gff file, please check it ! ')
                 sys.exit()
             else:
-                line = '\t'.join([index,str(row['start']),str(row['end']),db[keys[0]],'0',row['strand']])
+                line = '\t'.join([index,str(row['start']),str(row['end']),db[keys[0]].strip('"'),'0',row['strand']])
                 num += 1
                 print(line,file=output)
         else:
@@ -113,14 +133,14 @@ def gff2bed(gff_df,type,keys,output=None):
                 if i not in db.keys():
                     log.error(f'[{i}] is not present in the attributes with the gff file, please check it ! ')
                     sys.exit()
-            attrs = [db[i] for i in keys[0].split(',')]
+            attrs = [db[i].strip('"') for i in keys[0].split(',')]
             line_list = [index,str(row['start']),str(row['end'])]
             line_list.extend(attrs)
             line_list.extend(['0',row['strand']])
             line = '\t'.join(line_list)
             num += 1
             print(line,file=output)
-    log.info(f'Extracted {num} features (type={type} id={keys[0]})')
+    log.info(f'Extracted {num} features (type={type} id=[green blink]{keys[0]}[/])',extra={"markup": True})
     if output:
         log.info("Successful. Output file is `{}`".format(output.name))
 
@@ -165,7 +185,6 @@ def RenameAttributesID(args):
 
 def bed(args):
     """
-    %prog gff_file [--options]
     >>> %(prog)s <in.gff3> --type gene/exon/transcript --key gene_id,gene_name,... [Options]
     Parses the start, stop locations of the selected features out of GFF and generate a bed file
     Note: If gtf file is provided,please use jcvi.format.gff bed!
@@ -178,7 +197,7 @@ def bed(args):
     pReq = p.add_argument_group('Required arguments')
     pOpt = p.add_argument_group('Optional arguments')
     pReq.add_argument('gff', 
-            help='gff3 file (If gtf file is provided,please use jcvi.format.gff bed!)')
+            help='gff3 file (If gtf file is provided, please use jcvi.format.gff bed!)')
     pReq.add_argument('--type',
             dest="type",
             default="gene", required=True,
@@ -192,11 +211,12 @@ def bed(args):
             default=sys.stdout, help='output file [default: stdout]')
     pOpt.add_argument('-h', '--help', action='help',
             help='show help message and exit.')
-    
     args = p.parse_args(args)
+
     check_file_exists(args.gff)
+    gff_type = set_gff_type(args.gff)
     gff_df = import_gff(args.gff)
-    gff2bed(gff_df,args.type,args.key,args.output)
+    gff2bed(gff_df,gff_type,args.type,args.key,args.output)
 
 
 def main():

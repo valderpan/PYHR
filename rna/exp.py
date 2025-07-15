@@ -103,7 +103,7 @@ def stringtie2ExpMatrix(args):
     pReq.add_argument('-v','--valuetype',choices=['FPKM','TPM'] ,
             help='Select the type of data to be extracted')
     pReq.add_argument('-g','--genetype',choices=['ID','Name'] ,
-            help='Select the type of data to be extracted,{ID}:ENSEMBL,{Name}:SYMBL')
+            help='Select which column in the TAB file to use as the gene name,\n{ID}:Gene ID(may be ENSEMBL),{Name}:Gene Name(SYMBL)')
     pReq.add_argument('-o', '--output', required=True,
             help='Specify the output file (.xlsx)')
     pOpt.add_argument('-h', '--help', action='help',
