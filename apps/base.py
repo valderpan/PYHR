@@ -271,12 +271,29 @@ def read_file(file,Names=None):
     return df
 
 
+# def runshell(cmd):
+#     log.info(f'Run the shell command: [bold yellow blink]{cmd}[/]',extra={"markup":True})
+#     return_code = subprocess.run(cmd, shell=True,check=True)
+#     # if return_code != 0:
+#     #     raise Exception(f"Shell command `{cmd}` failed to execute !")
+#     return return_code.returncode
+
 def runshell(cmd):
-    log.info(f'Run the shell command: [bold yellow blink]{cmd}[/]',extra={"markup":True})
-    return_code = subprocess.run(cmd, shell=True,check=True)
-    # if return_code != 0:
-    #     raise Exception(f"Shell command `{cmd}` failed to execute !")
-    return return_code.returncode
+    log.info(f'Run the shell command: [bold yellow blink]{cmd}[/]', extra={"markup": True})
+    try:
+        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+        return result.returncode
+    except subprocess.CalledProcessError as e:
+        log.error(f"Shell command failed with exit code {e.returncode}")
+        log.error(f"Command stderr: {e.stderr}")
+        return e.returncode
+
+
+def remove_suffix(text, suffix):
+    if text.endswith(suffix):
+        return text[:-len(suffix)]
+    return text
+
 
 if __name__ == "__main__":
     main()

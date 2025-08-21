@@ -73,7 +73,7 @@ def compare_md5(Omd5D,Nmd5D,pattern):
         if len(Omd5D) != len(Nmd5D):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
         else:
-            log.warning('Consistent number of files before and after transfer, please specify the parameter pattern as ALL pattern')
+            log.warning('Consistent number of files before and after transfer, please specify the parameter pattern as [bold magenta blink]all[/] pattern [underline magenta blink](just use -p all)[/] ',extra={"markup": True})
         for key in Omd5D.keys():
             if not key in Nmd5D.keys():
                 log.warning('`{}` md5 value is missing'.format(key))
@@ -114,7 +114,7 @@ def download_fastq(SRR_file):
                     log.info(f'Download {line_list[0]} and store it in file {line_list[1]}.sra')
                     cmd1 = f'prefetch --max-size 200G {line_list[0]} -o {line_list[1]}.sra'
                     runshell(cmd1)
-                    cmd2 = f'fastq-dump --gzip --split-3 {line_list[1]}.sra'
+                    cmd2 = f'pfastq-dump -t 10 --gzip --split-3 {line_list[1]}.sra'
                     log.info(f'Convert {line_list[1]}.sra to {line_list[1]}.fastq.gz')
                     runshell(cmd2)
 
@@ -222,7 +222,8 @@ def CheckMD5(args):
 def DownloadFastq(args):
     """
     Download GEO database public data and convert it to .fastq.gz through python
-    Attention: The SRR file must contain two columns:[SRRnumber sample_name],separated by space or tab !    >>> %(prog)s <SRR_with_name file> [Options]
+    Attention: The SRR file must contain two columns:[SRRnumber sample_name],separated by space or tab !    
+    >>> %(prog)s <SRR_with_name file> [Options]
     """ 
     install()
     p = argparse.ArgumentParser(prog=DownloadFastq.__name__,

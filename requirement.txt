@@ -16,6 +16,9 @@
     - cytoolz
     - matplotlib
     - pysam
+    - coolpuppy
 - Executable programs
     - ice
     - build_matrix [from HiC-Pro/scripts/]
+    - sratoolkit
+    - pfastq-dump

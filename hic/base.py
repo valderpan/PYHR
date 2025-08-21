@@ -14,7 +14,8 @@ from collections import OrderedDict
 from rich.traceback import install
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
-from PYHR.apps.base import listify, read_file
+from PYHR.apps.base import listify, read_file, runshell, remove_suffix
+
 from PYHR.utils.fasta import Fa2dict
 
 
@@ -206,6 +207,39 @@ def addmissingconcat(beddf,matrix,output): #TODO
     resdf = resdf.sort_values(by=['bin1','bin2'])
     resdf.to_csv(output,sep='\t',index=False,header=True)
 
+
+def estimateResolution(inputfile,script,binsize,chrsizes,output_prefix):
+
+    """
+    Estimating and predicting HiC library resolution
+    """
+    if inputfile.endswith('.allValidPairs'):
+        log.info('The input file is a .allValidPairs file')
+        if output_prefix:
+            cmd1 = f"cat {inputfile} | {script} --matrix-format upper --binsize {binsize} --chrsizes {chrsizes} --ifile /dev/stdin --oprefix {output_prefix}"
+            runshell(cmd1)
+            log.info(f'The results file is output to `{output_prefix}.matrix` and `{output_prefix}_abs.bed`')
+            # cmd2 = f"cat {output_prefix}.matrix | awk " + "'{x[$1] += $3}END{for (i in x){print i, x[i]}}' | sort -k 1,1n  | awk  '($2>1000){sum=sum+1}END{print sum}'"
+            df = pd.read_csv(output_prefix + '.matrix', sep='\t', header=None, names=['bin1', 'bin2', 'contact'])
+            total_bins = pd.read_csv(output_prefix + '_abs.bed', sep='\t', header=None, names=['chr', 'start', 'end', 'index'])
+        else:
+            log.error('The output prefix [-o] is required when the input file is .allValidPairs file')
+            sys.exit()
+    elif inputfile.endswith('.matrix'):
+        log.info('The input file is a .matrix file')
+        df = pd.read_csv(inputfile, sep='\t', header=None, names=['bin1', 'bin2', 'contact'])
+        total_bins = pd.read_csv(remove_suffix(inputfile,'.matrix') + '_abs.bed', sep='\t', header=None, names=['chr', 'start', 'end', 'index'])
+    else:
+        log.error('The input file should be a .allValidPairs or .matrix file')
+        sys.exit()
+    
+    result = df.groupby('bin1').agg(bin2_count = ('bin2','size'),total_contact = ('contact','sum')).reset_index()
+    filtered_result = result[result['total_contact'] > 1000]
+    valid_bins = filtered_result
+    bin_ratio  = valid_bins.shape[0] / total_bins.shape[0]
+    #输出当前分辨率下的有效bin比例
+    log.info(f'At the current resolution of {binsize} bp, the proportion of valid bins is {bin_ratio:.4f} ({valid_bins.shape[0]} / {total_bins.shape[0]})')
+
 ## outside command 
 def modifyMatrixIndex(args):
     """
@@ -355,12 +389,47 @@ def DownsampleValid(args):
     downsample_valid(args.reads,args.number,args.output)
 
 
+def estimateHiCresolution(args):
+    """ 
+    Estimating and predicting HiC library resolution
+    >>> %(prog)s <allValidPairs/matrix file> <bulid_matrix script> <binsize> <chrsizes file> -o output_prefix [Options]
+    """
+    install()
+    p = argparse.ArgumentParser(prog=estimateHiCresolution.__name__,
+                        description=estimateHiCresolution.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('-i','--input',required=True,
+            help='Input the .allValidPairs or .matrix file ')
+    pReq.add_argument('-s','--script',required=True,
+            help='Input the build_matrix script file')
+    pReq.add_argument('--binsize', type=int,required=True,
+            help='Input the binsize')
+    pReq.add_argument('--chrsizes',required=True,
+            help='Input the chrsizes file')
+    #在输入文件为allValidPairs时，此参数为必需
+    pOpt.add_argument('-o', '--output_prefix',default=None,
+            help='output file prefix, it is necessary when the input file is .allValidPairs!') 
+    pOpt.add_argument('-h', '--help', action='help',
+            help='show help message and exit.')
+    
+    args = p.parse_args(args)
+    check_file_exists(args.input)
+    check_file_exists(args.script)
+    check_file_exists(args.chrsizes)
+    estimateResolution(args.input,args.script,args.binsize,args.chrsizes,args.output_prefix)
+
+
+
 def main():
     actions = (
             ("modifyMatrixIndex", "The bin index in HiC-Pro iced_matirx should start from 1 instead of 0"),
             ("removeCtgMatrix", "Delete the contig level interaction signal from the Hi-C matrix file"),
             ("statHiCPro", "Convert HiC-Pro output stats results into publishable level tables\n"),
             ("DownsampleValid","Downsampling the valid pairs reads"),
+            ("estimateHiCresolution","Estimating and predicting HiC library resolution")
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())

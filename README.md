@@ -30,8 +30,14 @@
 - Executable programs
     - ice
     - build_matrix [from HiC-Pro/scripts/]
+    - sratoolkit
+    - pfastq-dump
 
 ## Changelog
+- 0.5.5
+    - New function [apps.base remove_suffix]
+    - New function [hic.base estimateHiCresolution]
+    - Use pfastq-dump instead of fastq-dump in [utils.kit DownloadFastq]
 - 0.5.3
     - Update [apps.base runshell]
     - New module [utils.vcf]
