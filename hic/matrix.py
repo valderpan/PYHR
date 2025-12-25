@@ -170,7 +170,7 @@ class trans_hic():
 def ICEMatrix(args):
     """
     Use ice to process the raw matrix of HiC-Pro
-    >>> %(prog)s <matrix> [iced.matrix][Options]
+    >>> %(prog)s ice_path <matrix> [iced.matrix][Options]
     """ 
     install()
     p = argparse.ArgumentParser(prog=ICEMatrix.__name__,

@@ -56,9 +56,9 @@ def compare_md5(Omd5D,Nmd5D,pattern):
                         log.info('{} md5 value is OK ~'.format(key))
                         Correct_match += 1
                     else:
-                        log.error('{} md5 value is incorrectly checked !!!'.format(key))
-                        log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
-                        log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                        log.error('[underline yellow]{} [/]md5 value is incorrectly checked !!!'.format(key),extra={"markup": True})
+                        log.debug('The original md5 value of file {} is [underline green]{}[/]'.format(key,Omd5D[key]),extra={"markup": True})
+                        log.warning('The transferred md5 value of file {} is [underline yellow]{}[/]'.format(key,Nmd5D[key]),extra={"markup": True})
                         Error_match += 1
         log.info('#--------------------------------------------------------------------#')
         log.info(f'Total transferred file number : {len(Nmd5D.keys())}')
