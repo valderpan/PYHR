@@ -108,10 +108,10 @@ def download_fastq(SRR_file):
             else:
                 total_file += 1
                 line_list = line.split()
-                if os.path.exists(f"{line_list[1]}.sra"):
-                    log.info(f"{line_list[1]}.sra already exists, skip!")
+                if os.path.exists(f"{line_list[1]}.sra") or os.path.exists(f"{line_list[1]}.fastq.gz"):
+                    log.info(f"[bold green blink] {line_list[1]}.sra/fastq.gz already exists, skip![/]",extra={"markup": True})
                 else:
-                    log.info(f'Download {line_list[0]} and store it in file {line_list[1]}.sra')
+                    log.info(f'Download [bold green blink]{line_list[0]} [/]and store it in file [bold green blink] {line_list[1]}.sra [/]',extra={"markup": True})
                     cmd1 = f'prefetch --max-size 200G {line_list[0]} -o {line_list[1]}.sra'
                     runshell(cmd1)
                     cmd2 = f'pfastq-dump -t 10 --gzip --split-3 {line_list[1]}.sra'
@@ -121,6 +121,42 @@ def download_fastq(SRR_file):
     files_num = len([file for file in Path('./').files() if file.endswith('sra')])
     if total_file != files_num:
         log.error('Not all files are downloaded, please check it!')
+
+
+def download_GSE_suppl(accession,mode,filename = None,output_dir = './'):
+    # 确保输出目录存在
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        log.info(f"创建输出目录: {output_dir}")
+    
+    if mode == 'GSE' and accession.startswith('GSE'):
+        #获取GSE accession的前6位,GSE加上前三位数字
+        prefix6 = accession[:6]
+        cmd1 = f"wget -P {output_dir} ftp://ftp.ncbi.nlm.nih.gov/geo/series/{prefix6}nnn/{accession}/suppl/{accession}_RAW.tar"
+        log.info(f"正在下载GSE数据: {accession}")
+        runshell(cmd1)
+        output_path = os.path.join(output_dir, f"{accession}_RAW.tar")
+        # 修改4: 添加log.info打印下载文件存储位置
+        log.info(f"GSE数据已下载到: {output_path}")
+
+    elif mode == 'GSM' and accession.startswith('GSM'):
+        #下载单个文件
+        #首先判断传入的accession是否是GSM accession,如果是GSM accession则直接下载对应的文件
+        if filename is None:
+            log.error(f"GSM模式需要指定filename参数")
+            return False
+        
+        prefix7 = accession[:7]
+        cmd2 = f"wget -P {output_dir} ftp://ftp.ncbi.nlm.nih.gov/geo/samples/{prefix7}nnn/{accession}/suppl/{filename}"
+        log.info(f"正在下载GSM数据: {accession}/{filename}")
+        runshell(cmd2)
+        output_path = os.path.join(output_dir, filename)
+        # 修改7: 添加log.info打印下载文件存储位置
+        log.info(f"GSM数据已下载到: {output_path}")
+
+    else:
+        log.error('Option {} does not exist, it can only be one of [GSE or GSM]'.format(mode))
+
 
 
 def mv_encode_seq(metadata,seqpath):
@@ -292,12 +328,55 @@ def EvaluateSeqDepth(args):
     EvaluatingSeqDepth(args.seqpath,args.output)
 
 
+## outside command
+def DownloadGSESuppl(args):
+    """
+    Download the supplementary files (RAW.tar or single files) from the GEO database.
+
+    Examples:
+    1. Download a GSE's RAW.tar file:
+        %(prog)s GSE12345 -m GSE -o ./downloads
+    2. Download a specific supplementary file for a GSM:
+        %(prog)s GSM1234567 -m GSM -f GSM1234567_file.txt -o ./gsm_files
+
+    >>> %(prog)s <accession> <mode> [Options]
+    """
+    install()
+    p = argparse.ArgumentParser(prog=DownloadGSESuppl.__name__,
+                        description=DownloadGSESuppl.__doc__,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        conflict_handler='resolve')
+    pReq = p.add_argument_group('Required arguments')
+    pOpt = p.add_argument_group('Optional arguments')
+    pReq.add_argument('accession',
+                       help='GEO accession number (e.g., GSE12345 or GSM1234567)')
+    pReq.add_argument('-m','--mode', choices=['GSE', 'GSM'],
+                       help='Download mode. "GSE" for a series, "GSM" for a sample.')
+    pOpt.add_argument('-f', '--filename', default=None,
+                       help='Filename to download (REQUIRED if mode is "GSM").')
+    pOpt.add_argument('-o', '--output_dir', default='./',
+                       help='Output directory for downloaded files (default: current directory).')
+    pOpt.add_argument('-h', '--help', action='help',
+                       help='show help message and exit.')
+
+    args = p.parse_args(args)
+
+    # 验证参数逻辑
+    if args.mode == 'GSM' and not args.filename:
+        p.error('The following argument is required when mode is GSM: -f/--filename')
+
+    # 调用核心下载函数
+    download_GSE_suppl(args.accession, args.mode, args.filename, args.output_dir)
+    log.info(f"[bold green blink]Download completed successfully![/]", extra={"markup": True})
+
+
 def main():
     actions = (
             ("CheckMD5", "Correct the md5 value before and after file transfer"),
             ("DownloadFastq","Download GEO database public data and convert it to .fastq.gz through python"),
             ("MVENCODE","Rename the ENCODE data according to metadata.tsv"),
             ("EvaluateSeqDepth","Evaluate the sequencing volume of the sequencing file"),
+            ("DownloadGSESuppl","Download the supplementary files of GSE from GEO database"),
         )
     p = ActionDispatcher(actions)
     p.dispatch(globals())

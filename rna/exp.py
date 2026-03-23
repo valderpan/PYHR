@@ -59,7 +59,8 @@ def merge2matrix(files,valuetype,genetype,output_file):
     # for i in range(1,len(mergedf_list)):
     #     res = pd.merge(res,mergedf_list[i],on="Gene ID")
     log.info('The results file is output to `{}` '.format(output_file))
-    res.to_excel(output_file,header=True,index=False)
+    # res.to_excel(output_file,header=True,index=False)
+    res.to_csv(output_file,header=True,index=False)
 
 
 def mergeRSEM2matrix(files,valuetype,output_file):
@@ -81,7 +82,8 @@ def mergeRSEM2matrix(files,valuetype,output_file):
     for i in range(1,len(mergedf_list)):
         res = pd.merge(res,mergedf_list[i],on='gene_id')
     log.info('The results file is output to `{}` '.format(output_file))
-    res.to_excel(output_file,header=True,index=False)
+    # res.to_excel(output_file,header=True,index=False)
+    res.to_csv(output_file,header=True,index=False)
 
 
 #outside command
@@ -105,7 +107,7 @@ def stringtie2ExpMatrix(args):
     pReq.add_argument('-g','--genetype',choices=['ID','Name'] ,
             help='Select which column in the TAB file to use as the gene name,\n{ID}:Gene ID(may be ENSEMBL),{Name}:Gene Name(SYMBL)')
     pReq.add_argument('-o', '--output', required=True,
-            help='Specify the output file (.xlsx)')
+            help='Specify the output file (.csv)')
     pOpt.add_argument('-h', '--help', action='help',
             help='Show help message and exit.')
 
@@ -135,7 +137,7 @@ def RSEM2ExpMatrix(args):
     pReq.add_argument('-v','--valuetype',choices=['FPKM','TPM','ReadsCount'] ,
             help='Select the type of data to be extracted')
     pReq.add_argument('-o', '--output', required=True,
-            help='Specify the output file (.xlsx)')
+            help='Specify the output file (.csv)')
     pOpt.add_argument('-h', '--help', action='help',
             help='Show help message and exit.')
     args = p.parse_args(args)

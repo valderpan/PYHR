@@ -1,6 +1,13 @@
 ## Changelog
 
 All notable changes to this project will be documented in this file.
+## [0.5.7] - 2026-03-12
+### Added
+- New function `utils.kit.DownloadGSESuppl` to download the supplementary files of GSE from GEO database.
+
+### Changed
+- Change the output format of the `rna.exp.stringtie2ExpMatrix` function from `.xlsx` to `.csv`
+
 
 ## [0.5.6] - 2025-12-25
 ### Added
@@ -8,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Updated documentation for `hic.matrix.ICEMatrix`.
+
 
 ## [0.5.5] - 2025-08-21
 ### Added
@@ -19,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Fixed parsing logic in `threeD.loop.parse_inter` and `run_common` causing crashes on empty inputs.
+
 
 - 0.5.5
     - New function [apps.base remove_suffix]
