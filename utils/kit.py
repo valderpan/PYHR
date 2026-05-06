@@ -41,6 +41,19 @@ def compare_md5(Omd5D,Nmd5D,pattern):
     all_files = len(Omd5D.keys())
     Error_match = 0
     Correct_match = 0
+    Missing_match = 0
+    correct_files_list = [];error_files_list = []; missing_files_list = [] # 【新增点】：初始化一个列表，用于专门存放正确/错误/丢失的文件名
+
+    # 1. 初始化错误详情表格 (MD5 Mismatch)
+    error_table = Table(title="[bold red]❌  MD5 Mismatch Details[/]",show_header=True, header_style="bold red")
+    error_table.add_column("sampleID", style="cyan", justify="left")
+    error_table.add_column("original md5 value", style="green", justify="left")
+    error_table.add_column("transferred md5 value", style="yellow", justify="left")
+    # 2. 初始化缺失文件表格 (Missing Files)
+    missing_table = Table(title="[bold yellow]⚠️  Missing Files Details[/]",show_header=True, header_style="bold yellow")
+    missing_table.add_column("sampleID (Missing)", style="cyan", justify="left")
+    missing_table.add_column("original md5 value", style="green", justify="left")
+
     if pattern == 'all':
         if len(Omd5D) != len(Nmd5D):
             log.error('The number of files before and after the transfer is different, please check it !!!')
@@ -50,25 +63,69 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             for key in Omd5D.keys():
                 if not key in Nmd5D.keys():
                     # log.error('{} md5 value is missing'.format(key))
-                    log.warning('{} md5 value is missing'.format(key))
+                    #log.warning('{} md5 value is missing'.format(key))
+                    missing_table.add_row(key, Omd5D[key])
+                    missing_files_list.append(key) # 【新增点】：将缺失的文件名加入列表
+                    Missing_match += 1
                 else:
                     if Nmd5D[key] == Omd5D[key]:
                         log.info('{} md5 value is OK ~'.format(key))
+                        correct_files_list.append(key) # 【新增点】：将正确的文件名加入列表
                         Correct_match += 1
                     else:
                         log.error('[underline yellow]{} [/]md5 value is incorrectly checked !!!'.format(key),extra={"markup": True})
-                        log.debug('The original md5 value of file {} is [underline green]{}[/]'.format(key,Omd5D[key]),extra={"markup": True})
-                        log.warning('The transferred md5 value of file {} is [underline yellow]{}[/]'.format(key,Nmd5D[key]),extra={"markup": True})
+                        #log.debug('The original md5 value of file {} is [underline green]{}[/]'.format(key,Omd5D[key]),extra={"markup": True})
+                        #log.warning('The transferred md5 value of file {} is [underline yellow]{}[/]'.format(key,Nmd5D[key]),extra={"markup": True})
+                        error_table.add_row(key, Omd5D[key], Nmd5D[key])
+                        error_files_list.append(key) # 【新增点】：将错误的文件名加入列表
                         Error_match += 1
+        # 【修改点开始】：调整输出顺序，先统一打印所有表格，保证视觉连贯性
+        if Missing_match > 0:
+            console.print() 
+            console.print(missing_table, justify="center") 
+            
+        if Error_match > 0:
+            console.print() 
+            console.print(error_table, justify="center")
+        
+        # 【修改点】：将所有 txt 文件的生成和 log.info 提示统一放在表格下面集中输出
+        if Error_match > 0 or Missing_match > 0:
+            console.print() # 打印一个空行，将表格与输出日志隔开，更美观
+            
+            if len(correct_files_list) > 0:
+                correct_output_file = "MD5_correct_files.txt"
+                with open(correct_output_file, "w") as f:
+                    for corr_file in correct_files_list:
+                        f.write(f"{corr_file}\n")
+                log.info(f"[bold green]The list of correctly checked files ✅ has been saved to ./{correct_output_file}[/]", extra={"markup": True})
+                
+            if Missing_match > 0:
+                missing_output_file = "MD5_lose_files.txt"
+                with open(missing_output_file, "w") as f:
+                    for miss_file in missing_files_list:
+                        f.write(f"{miss_file}\n")
+                log.info(f"[bold yellow]The list of missing files ⚠️ has been saved to ./{missing_output_file}[/]", extra={"markup": True})
+                
+            if Error_match > 0:
+                error_output_file = "MD5_mismatch_files.txt"
+                with open(error_output_file, "w") as f:
+                    for err_file in error_files_list:
+                        f.write(f"{err_file}\n")
+                log.info(f"[bold red]The list of mismatch files ❌ has been saved to ./{error_output_file}[/]", extra={"markup": True})
+        # 【修改点结束】
+        
         log.info('#--------------------------------------------------------------------#')
         log.info(f'Total transferred file number : {len(Nmd5D.keys())}')
-        log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
+        # 汇总信息中加入缺失文件的数量统计
+        log.info('[bold green]Correct checked file number : {}[/], [bold red]Incorrect checked file number is {}[/], [bold yellow]Missing file number is {}[/]'.format(Correct_match, Error_match, Missing_match), extra={"markup": True})
         log.info('#=========================MD5 SUMMARY================================#')
+        
         if Correct_match == all_files:
             log.info('#                 [bold green blink] All files are correctly checked ~ [/]                #', extra={"markup": True})
         else:
             log.warning('#     [bold red] Not all files are correctly checked, please check it !!! [/]     #', extra={"markup": True})
         log.info('#====================================================================#')
+
     elif pattern == 'part':
         if len(Omd5D) != len(Nmd5D):
             log.warning('The number of files before and after the transfer is different, but [-p=part] is triggered ,so it will still run!')
@@ -76,20 +133,63 @@ def compare_md5(Omd5D,Nmd5D,pattern):
             log.warning('Consistent number of files before and after transfer, please specify the parameter pattern as [bold magenta blink]all[/] pattern [underline magenta blink](just use -p all)[/] ',extra={"markup": True})
         for key in Omd5D.keys():
             if not key in Nmd5D.keys():
-                log.warning('`{}` md5 value is missing'.format(key))
+                #log.warning('`{}` md5 value is missing'.format(key))
+                missing_table.add_row(key, Omd5D[key])
+                missing_files_list.append(key) # 【新增点】：将缺失的文件名加入列表
+                Missing_match += 1
             else:
                 if Nmd5D[key] == Omd5D[key]:
                     log.info('`{}` md5 value is OK ~'.format(key))
+                    correct_files_list.append(key) # 【新增点】：将正确的文件名加入列表
                     Correct_match += 1
                 else:
                     log.error('`{}` md5 value is incorrectly checked'.format(key))
-                    log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
-                    log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                    #log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
+                    #log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
+                    # 将错误信息添加到表格中，替代原来的 debug 和 warning
+                    error_table.add_row(key, Omd5D[key], Nmd5D[key])
+                    error_files_list.append(key) # 【新增点】：将错误的文件名加入列表
                     Error_match += 1
+        
+        # 【修改点开始】：调整输出顺序，先统一打印所有表格
+        if Missing_match > 0:
+            console.print() 
+            console.print(missing_table, justify="center") 
+            
+        if Error_match > 0:
+            console.print() 
+            console.print(error_table, justify="center")
+        # 【修改点】：将所有 txt 文件的生成和 log.info 提示统一放在表格下面集中输出
+        if Error_match > 0 or Missing_match > 0:
+            console.print() # 打印一个空行，将表格与输出日志隔开
+            
+            if len(correct_files_list) > 0:
+                correct_output_file = "MD5_correct_files.txt"
+                with open(correct_output_file, "w") as f:
+                    for corr_file in correct_files_list:
+                        f.write(f"{corr_file}\n")
+                log.info(f"[bold green]The list of correctly checked files ✅ has been saved to ./{correct_output_file}[/]", extra={"markup": True})
+                
+            if Missing_match > 0:
+                missing_output_file = "MD5_lose_files.txt"
+                with open(missing_output_file, "w") as f:
+                    for miss_file in missing_files_list:
+                        f.write(f"{miss_file}\n")
+                log.info(f"[bold yellow]The list of missing files ⚠️ has been saved to ./{missing_output_file}[/]", extra={"markup": True})
+                
+            if Error_match > 0:
+                error_output_file = "MD5_mismatch_files.txt"
+                with open(error_output_file, "w") as f:
+                    for err_file in error_files_list:
+                        f.write(f"{err_file}\n")
+                log.info(f"[bold red]The list of mismatch files ❌ has been saved to ./{error_output_file}[/]", extra={"markup": True})
+        # 【修改点结束】
+
         log.info('#--------------------------------------------------------------------#')
         log.info(f'Total original file number : {len(Omd5D.keys())}')
         log.info(f"Total transferred file number : {len(Nmd5D.keys())}")
-        log.info('Correct checked file number : {}, Incorrect checked file number is {}'.format(Correct_match,Error_match))
+        # 汇总信息中加入缺失文件的数量统计
+        log.info('[bold green]Correct checked file number : {}[/], [bold red]Incorrect checked file number is {}[/], [bold yellow]Missing file number is {}[/]'.format(Correct_match, Error_match, Missing_match), extra={"markup": True})
         log.info('#=========================MD5 SUMMARY================================#')
         if Correct_match == len(Nmd5D.keys()):
             log.info('#                 [bold green blink] All files are correctly checked ~ [/]                #', extra={"markup": True})
@@ -100,28 +200,69 @@ def compare_md5(Omd5D,Nmd5D,pattern):
 
 def download_fastq(SRR_file):
     total_file = 0
+    skip_file = 0
+    sra_to_process = [] # 用于记录成功下载，需要转换的文件列表
+
+    # 第一阶段：专注于在有网络的ln01节点下载网络数据
     with open(SRR_file) as f:
         lines = (line.strip() for line in f)
         for line in lines:
             if not line.startswith('SRR'):
-                continue
+                skip_file += 1
             else:
                 total_file += 1
                 line_list = line.split()
-                if os.path.exists(f"{line_list[1]}.sra") or os.path.exists(f"{line_list[1]}.fastq.gz"):
-                    log.info(f"[bold green blink] {line_list[1]}.sra/fastq.gz already exists, skip![/]",extra={"markup": True})
-                else:
-                    log.info(f'Download [bold green blink]{line_list[0]} [/]and store it in file [bold green blink] {line_list[1]}.sra [/]',extra={"markup": True})
-                    cmd1 = f'prefetch --max-size 200G {line_list[0]} -o {line_list[1]}.sra'
-                    runshell(cmd1)
-                    cmd2 = f'pfastq-dump -t 10 --gzip --split-3 {line_list[1]}.sra'
-                    log.info(f'Convert {line_list[1]}.sra to {line_list[1]}.fastq.gz')
-                    runshell(cmd2)
+                srr_id = line_list[0]
+                target_name = line_list[1]
+                sra_file = f"{target_name}.sra"
+                fastq_file = f"{target_name}.fastq.gz"
 
-    files_num = len([file for file in Path('./').files() if file.endswith('sra')])
+                line_list = line.split()
+                # if os.path.exists(f"{line_list[1]}.sra") or os.path.exists(f"{line_list[1]}.fastq.gz"):
+                #     log.info(f"[bold green blink] {line_list[1]}.sra/fastq.gz already exists, skip![/]",extra={"markup": True})
+                if os.path.exists(sra_file) or os.path.exists(fastq_file):
+                    log.info(f"[bold green blink] {sra_file}/fastq.gz already exists, skip![/]", extra={"markup": True})
+                if os.path.exists(sra_file) and not os.path.exists(fastq_file):
+                    # 如果只有 sra，没有 fastq，说明以前中断过，加入待处理列表
+                    sra_to_process.append(target_name)
+                else:
+                    log.info(f'Download [bold green blink]{srr_id} [/]and store it in file [bold green blink] {sra_file} [/]',extra={"markup": True})
+                    cmd1 = f'prefetch --max-size 200G {srr_id} -o {sra_file}'
+                    runshell(cmd1)
+                    sra_to_process.append(target_name)
+
+                    # cmd2 = f'pfastq-dump -t 10 --gzip --split-3 {line_list[1]}.sra'
+                    # log.info(f'Convert {line_list[1]}.sra to {line_list[1]}.fastq.gz')
+                    # runshell(cmd2)
+    # 完整性检查（仅检查下载阶段）
+    files_num = len([file for file in Path('./').files() if file.endswith('sra')]) - skip_file
     if total_file != files_num:
         log.error('Not all files are downloaded, please check it!')
 
+    # 第二阶段：生成并在 计算节点fat01 执行计算密集型转换
+    if sra_to_process:
+        log.info(f"Generating PBS script to process {len(sra_to_process)} SRA files on compute node [bold green blink]fat01[/]...", extra={"markup": True})
+        script_name = "PBS_pfastq_dump.sh"
+        
+        with open(script_name, 'w') as sf:
+            sf.write("#!/bin/bash\n")
+            sf.write("#PBS -N PBS_pfastq_dump.sh\n")
+            sf.write("#PBS -l nodes=fat01:ppn=2\n")
+            sf.write("#PBS -l walltime=999:00:00\n")
+            sf.write("#PBS -q all\n")              # 申请 10 核
+            sf.write("#PBS -V\n")              # 申请 10 核
+            sf.write("#PBS -S /bin/bash\n")
+            sf.write("cd $PBS_O_WORKDIR")
+            sf.write("date -R\n\n")
+            
+            for target in sra_to_process:
+                sf.write(f"echo 'Converting {target}.sra'\n")
+                sf.write(f"pfastq-dump -t 10 --gzip --split-3 {target}.sra\n")
+        
+        # 提交作业
+        runshell(f"qsub {script_name}")
+        log.info("PBS [bold green blink]pfastq_dump[/] job submitted to compute node successfully!", extra={"markup": True})
+    
 
 def download_GSE_suppl(accession,mode,filename = None,output_dir = './'):
     # 确保输出目录存在
@@ -258,7 +399,9 @@ def CheckMD5(args):
 def DownloadFastq(args):
     """
     Download GEO database public data and convert it to .fastq.gz through python
-    Attention: The SRR file must contain two columns:[SRRnumber sample_name],separated by space or tab !    
+    Attention: The SRR file must contain two columns:
+                [SRRnumber sample_name],separated by space or tab !    
+    You can add a “#” at the beginning of a line to comment it out and skip that line in the SRR file.
     >>> %(prog)s <SRR_with_name file> [Options]
     """ 
     install()
