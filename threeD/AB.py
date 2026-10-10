@@ -12,7 +12,7 @@ import argparse
 import cooltools
 import numpy as np
 import pandas as pd
-import cooltools.lib.plotting
+# import cooltools.lib.plotting
 import matplotlib.pyplot as plt
 from path import Path
 from scipy import sparse

@@ -1,6 +1,16 @@
 ## Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [0.5.8] - 2026-10-10
+### Added
+- New module `apps.colors`
+
+### Changed
+- DEBUG `hic.base.estimateResolution`
+- DEBUG `utils.kit`
+
+
 ## [0.5.7] - 2026-03-12
 ### Added
 - New function `utils.kit.DownloadGSESuppl` to download the supplementary files of GSE from GEO database.

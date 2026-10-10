@@ -233,10 +233,25 @@ def estimateResolution(inputfile,script,binsize,chrsizes,output_prefix):
         log.error('The input file should be a .allValidPairs or .matrix file')
         sys.exit()
     
-    result = df.groupby('bin1').agg(bin2_count = ('bin2','size'),total_contact = ('contact','sum')).reset_index()
-    filtered_result = result[result['total_contact'] > 1000]
-    valid_bins = filtered_result
-    bin_ratio  = valid_bins.shape[0] / total_bins.shape[0]
+    bin_contacts = pd.concat(
+        [
+            df[['bin1', 'contact']].rename(columns={'bin1': 'bin'}),
+            df[['bin2', 'contact']].rename(columns={'bin2': 'bin'}),
+        ],
+        ignore_index=True,
+    ).groupby('bin', as_index=False)['contact'].sum()
+
+    bin_stats = total_bins[['index']].merge(
+        bin_contacts,
+        left_on='index',
+        right_on='bin',
+        how='left',
+    )
+
+    bin_stats['contact'] = bin_stats['contact'].fillna(0)
+
+    valid_bins = bin_stats[bin_stats['contact'] >= 1000]
+    bin_ratio = len(valid_bins) / len(bin_stats)
     #输出当前分辨率下的有效bin比例
     log.info(f'At the current resolution of {binsize} bp, the proportion of valid bins is {bin_ratio:.4f} ({valid_bins.shape[0]} / {total_bins.shape[0]})')
 

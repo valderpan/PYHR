@@ -17,6 +17,7 @@ from rich.table import Column, Table
 from PYHR.apps.base import ActionDispatcher
 from PYHR.apps.base import check_file_exists, richlog
 from PYHR.apps.base import listify, read_file, runshell
+from PYHR.apps.colors import BURGUNDY, GREEN, CYAN, RESET, color_text, color_command_line
 
 log = richlog()
 console = Console()
@@ -37,7 +38,7 @@ class md5():
         return self.md5D
 
 
-def compare_md5(Omd5D,Nmd5D,pattern):
+def compare_md5(Omd5D, Nmd5D, pattern, table_display_limit=20):
     all_files = len(Omd5D.keys())
     Error_match = 0
     Correct_match = 0
@@ -54,6 +55,14 @@ def compare_md5(Omd5D,Nmd5D,pattern):
     missing_table.add_column("sampleID (Missing)", style="cyan", justify="left")
     missing_table.add_column("original md5 value", style="green", justify="left")
 
+    def add_limited_row(table, current_count, display_limit, *row_values):
+        """
+        Add row to Rich Table only when current_count <= display_limit.
+        This avoids printing extremely long tables in terminal.
+        """
+        if current_count <= display_limit:
+            table.add_row(*[str(x) for x in row_values])
+
     if pattern == 'all':
         if len(Omd5D) != len(Nmd5D):
             log.error('The number of files before and after the transfer is different, please check it !!!')
@@ -64,26 +73,52 @@ def compare_md5(Omd5D,Nmd5D,pattern):
                 if not key in Nmd5D.keys():
                     # log.error('{} md5 value is missing'.format(key))
                     #log.warning('{} md5 value is missing'.format(key))
-                    missing_table.add_row(key, Omd5D[key])
                     missing_files_list.append(key) # 【新增点】：将缺失的文件名加入列表
                     Missing_match += 1
+                    # 只在终端 Table 中展示前 N 个缺失文件
+                    add_limited_row(
+                        missing_table,
+                        Missing_match,
+                        table_display_limit,
+                        key,
+                        Omd5D[key]
+                    )
                 else:
                     if Nmd5D[key] == Omd5D[key]:
-                        log.info('{} md5 value is OK ~'.format(key))
                         correct_files_list.append(key) # 【新增点】：将正确的文件名加入列表
                         Correct_match += 1
                     else:
                         log.error('[underline yellow]{} [/]md5 value is incorrectly checked !!!'.format(key),extra={"markup": True})
                         #log.debug('The original md5 value of file {} is [underline green]{}[/]'.format(key,Omd5D[key]),extra={"markup": True})
                         #log.warning('The transferred md5 value of file {} is [underline yellow]{}[/]'.format(key,Nmd5D[key]),extra={"markup": True})
-                        error_table.add_row(key, Omd5D[key], Nmd5D[key])
                         error_files_list.append(key) # 【新增点】：将错误的文件名加入列表
                         Error_match += 1
+                        # 只在终端 Table 中展示前 N 个MD5错误文件
+                        add_limited_row(
+                            error_table,
+                            Error_match,
+                            table_display_limit,
+                            key,
+                            Omd5D[key],
+                            Nmd5D[key]
+                        )
+        
+        if Missing_match > table_display_limit:
+            missing_table.add_row(
+                f"... {Missing_match - table_display_limit} more missing files omitted",
+                "See MD5_lose_files.txt"
+            )
         # 【修改点开始】：调整输出顺序，先统一打印所有表格，保证视觉连贯性
         if Missing_match > 0:
             console.print() 
             console.print(missing_table, justify="center") 
-            
+        
+        if Error_match > table_display_limit:
+            error_table.add_row(
+                f"... {Error_match - table_display_limit} more mismatch files omitted",
+                "See MD5_mismatch_files.txt",
+                "See MD5_mismatch_files.txt"
+            )
         if Error_match > 0:
             console.print() 
             console.print(error_table, justify="center")
@@ -134,12 +169,17 @@ def compare_md5(Omd5D,Nmd5D,pattern):
         for key in Omd5D.keys():
             if not key in Nmd5D.keys():
                 #log.warning('`{}` md5 value is missing'.format(key))
-                missing_table.add_row(key, Omd5D[key])
                 missing_files_list.append(key) # 【新增点】：将缺失的文件名加入列表
                 Missing_match += 1
+                add_limited_row(
+                    missing_table,
+                    Missing_match,
+                    table_display_limit,
+                    key,
+                    Omd5D[key]
+                )
             else:
                 if Nmd5D[key] == Omd5D[key]:
-                    log.info('`{}` md5 value is OK ~'.format(key))
                     correct_files_list.append(key) # 【新增点】：将正确的文件名加入列表
                     Correct_match += 1
                 else:
@@ -147,15 +187,32 @@ def compare_md5(Omd5D,Nmd5D,pattern):
                     #log.debug('The original md5 value of file {} is {}'.format(key,Omd5D[key]))
                     #log.warning('The transferred md5 value of file {} is {}'.format(key,Nmd5D[key]))
                     # 将错误信息添加到表格中，替代原来的 debug 和 warning
-                    error_table.add_row(key, Omd5D[key], Nmd5D[key])
                     error_files_list.append(key) # 【新增点】：将错误的文件名加入列表
                     Error_match += 1
-        
+                    add_limited_row(
+                        error_table,
+                        Error_match,
+                        table_display_limit,
+                        key,
+                        Omd5D[key],
+                        Nmd5D[key]
+                    )
+        if Missing_match > table_display_limit:
+            missing_table.add_row(
+                f"... {Missing_match - table_display_limit} more missing files omitted",
+                "See MD5_lose_files.txt"
+            )
         # 【修改点开始】：调整输出顺序，先统一打印所有表格
         if Missing_match > 0:
             console.print() 
             console.print(missing_table, justify="center") 
-            
+
+        if Error_match > table_display_limit:
+            error_table.add_row(
+                f"... {Error_match - table_display_limit} more mismatch files omitted",
+                "See MD5_mismatch_files.txt",
+                "See MD5_mismatch_files.txt"
+            )
         if Error_match > 0:
             console.print() 
             console.print(error_table, justify="center")
@@ -247,12 +304,12 @@ def download_fastq(SRR_file):
         with open(script_name, 'w') as sf:
             sf.write("#!/bin/bash\n")
             sf.write("#PBS -N PBS_pfastq_dump.sh\n")
-            sf.write("#PBS -l nodes=fat01:ppn=2\n")
-            sf.write("#PBS -l walltime=999:00:00\n")
-            sf.write("#PBS -q all\n")              # 申请 10 核
-            sf.write("#PBS -V\n")              # 申请 10 核
+            sf.write("#PBS -l nodes=fat01:ppn=10\n")
+            sf.write("#PBS -l walltime=30:00:00\n")
+            sf.write("#PBS -q all\n")
+            sf.write("#PBS -V\n")
             sf.write("#PBS -S /bin/bash\n")
-            sf.write("cd $PBS_O_WORKDIR")
+            sf.write("cd $PBS_O_WORKDIR\n")
             sf.write("date -R\n\n")
             
             for target in sra_to_process:
@@ -273,12 +330,22 @@ def download_GSE_suppl(accession,mode,filename = None,output_dir = './'):
     if mode == 'GSE' and accession.startswith('GSE'):
         #获取GSE accession的前6位,GSE加上前三位数字
         prefix6 = accession[:6]
-        cmd1 = f"wget -P {output_dir} ftp://ftp.ncbi.nlm.nih.gov/geo/series/{prefix6}nnn/{accession}/suppl/{accession}_RAW.tar"
-        log.info(f"正在下载GSE数据: {accession}")
-        runshell(cmd1)
         output_path = os.path.join(output_dir, f"{accession}_RAW.tar")
-        # 修改4: 添加log.info打印下载文件存储位置
-        log.info(f"GSE数据已下载到: {output_path}")
+        cmd1 = (
+            f"wget -P {output_dir} "
+            f"ftp://ftp.ncbi.nlm.nih.gov/geo/series/{prefix6}nnn/{accession}/suppl/{accession}_RAW.tar"
+        )
+
+        log.info(f"正在下载GSE数据: {accession}")
+        return_code = runshell(cmd1)
+
+        if return_code == 0 and os.path.exists(output_path):
+            log.info(f"GSE数据已下载到: {output_path}")
+            return True
+        else:
+            log.error(f"GSE数据下载失败: {accession}")
+            log.error(f"预期输出文件不存在或wget返回非0退出码: {output_path}")
+            return False
 
     elif mode == 'GSM' and accession.startswith('GSM'):
         #下载单个文件
@@ -288,15 +355,26 @@ def download_GSE_suppl(accession,mode,filename = None,output_dir = './'):
             return False
         
         prefix7 = accession[:7]
-        cmd2 = f"wget -P {output_dir} ftp://ftp.ncbi.nlm.nih.gov/geo/samples/{prefix7}nnn/{accession}/suppl/{filename}"
-        log.info(f"正在下载GSM数据: {accession}/{filename}")
-        runshell(cmd2)
         output_path = os.path.join(output_dir, filename)
-        # 修改7: 添加log.info打印下载文件存储位置
-        log.info(f"GSM数据已下载到: {output_path}")
+        cmd2 = (
+            f"wget -P {output_dir} "
+            f"ftp://ftp.ncbi.nlm.nih.gov/geo/samples/{prefix7}nnn/{accession}/suppl/{filename}"
+        )
+
+        log.info(f"正在下载GSM数据: {accession}/{filename}")
+        return_code = runshell(cmd2)
+
+        if return_code == 0 and os.path.exists(output_path):
+            log.info(f"GSM数据已下载到: {output_path}")
+            return True
+        else:
+            log.error(f"GSM数据下载失败: {accession}/{filename}")
+            log.error(f"预期输出文件不存在或wget返回非0退出码: {output_path}")
+            return False
 
     else:
-        log.error('Option {} does not exist, it can only be one of [GSE or GSM]'.format(mode))
+        log.error(f"Option {mode} does not exist, it can only be one of [GSE or GSM]")
+        return False
 
 
 
@@ -367,11 +445,16 @@ def CheckMD5(args):
     """
     Correct the md5 value before and after file transfer
     >>> %(prog)s <Original md5 file> <transferred md5 file> [Options]
+        %(prog)s MD5_original.txt calmd5.txt -p all
     -p [pattern] means Whether the new md5 file after transmission is part or all of the Original md5 file
     """ 
     install()
+
+    description = CheckMD5.__doc__
+    description = color_command_line(description, "%(prog)s MD5_original.txt calmd5.txt -p all", GREEN)
+
     p = argparse.ArgumentParser(prog=CheckMD5.__name__,
-                        description=CheckMD5.__doc__,
+                        description=description,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
@@ -383,6 +466,8 @@ def CheckMD5(args):
     pReq.add_argument('-p','--pattern',choices=['all','part'],
                       required=True,
             help='Input the transferred file')
+    pOpt.add_argument('--table-display-limit',type=int,default=20,
+        help='Maximum number of missing/mismatch files displayed in terminal table [default: 20]')   
     pOpt.add_argument('-h', '--help', action='help',
             help='show help message and exit.')
     
@@ -393,7 +478,7 @@ def CheckMD5(args):
     od = md5(args.OriginalMD5)
     nd = md5(args.TransferredMD5)
     pattern = args.pattern
-    compare_md5(od.set_md5D(),nd.set_md5D(),pattern)
+    compare_md5(od.set_md5D(),nd.set_md5D(),pattern,table_display_limit=args.table_display_limit)
 
 
 def DownloadFastq(args):
@@ -480,13 +565,21 @@ def DownloadGSESuppl(args):
     1. Download a GSE's RAW.tar file:
         %(prog)s GSE12345 -m GSE -o ./downloads
     2. Download a specific supplementary file for a GSM:
-        %(prog)s GSM1234567 -m GSM -f GSM1234567_file.txt -o ./gsm_files
+        %(prog)s GSM1234567 -m GSM -f GSM2828934_ENCFF961YNW_peaks_hg19.bed.gz -o ./GSM_files
 
     >>> %(prog)s <accession> <mode> [Options]
     """
     install()
+
+    description = DownloadGSESuppl.__doc__
+    # description = description.replace("GSE12345", color_text("GSE12345", GREEN, bold=True))
+    description = color_command_line(description,"%(prog)s GSE12345 -m GSE -o ./downloads",GREEN)
+    description = color_command_line(description,
+                                     "%(prog)s GSM1234567 -m GSM -f GSM2828934_ENCFF961YNW_peaks_hg19.bed.gz -o ./GSM_files",
+                                     GREEN)
+
     p = argparse.ArgumentParser(prog=DownloadGSESuppl.__name__,
-                        description=DownloadGSESuppl.__doc__,
+                        description=description,
                         formatter_class=argparse.RawTextHelpFormatter,
                         conflict_handler='resolve')
     pReq = p.add_argument_group('Required arguments')
@@ -509,8 +602,13 @@ def DownloadGSESuppl(args):
         p.error('The following argument is required when mode is GSM: -f/--filename')
 
     # 调用核心下载函数
-    download_GSE_suppl(args.accession, args.mode, args.filename, args.output_dir)
-    log.info(f"[bold green blink]Download completed successfully![/]", extra={"markup": True})
+    success = download_GSE_suppl(args.accession, args.mode, args.filename, args.output_dir)
+
+    if success:
+        log.info(f"[bold green blink]Download completed successfully![/]", extra={"markup": True})
+    else:
+        log.error(f"[bold red blink]Download failed! Please check accession, filename, network, or GEO FTP path.[/]", extra={"markup": True})
+        sys.exit(1)
 
 
 def main():
